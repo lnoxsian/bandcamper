@@ -6,9 +6,12 @@ BIN_DIR := ./bin
 DIST_DIR := ./dist
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "1.0.0")
 LDFLAGS := -ldflags="-s -w -X main.Version=$(VERSION)"
+BUILD_FLAGS := -trimpath $(LDFLAGS)
+CGO_ENABLED ?= 0
+export CGO_ENABLED
 GO ?= go
 
-.PHONY: all build build-target build-all \
+.PHONY: all build build-min build-target build-all \
         build-linux build-linux-amd64 build-linux-arm64 \
         build-darwin build-darwin-amd64 build-darwin-arm64 \
         build-windows build-windows-amd64 build-windows-arm64 \
@@ -19,8 +22,17 @@ all: build
 ## build: Compile native binary for the current platform to bin/bandcamper
 build:
 	@mkdir -p $(BIN_DIR)
-	$(GO) build $(LDFLAGS) -o $(BIN_DIR)/$(BINARY_NAME) $(CMD_DIR)
+	$(GO) build $(BUILD_FLAGS) -o $(BIN_DIR)/$(BINARY_NAME) $(CMD_DIR)
 	@echo "Built $(BIN_DIR)/$(BINARY_NAME)"
+
+## build-min: Build ultra-compact binary with UPX compression (~2.5 MB)
+build-min: build
+	@if command -v upx >/dev/null 2>&1; then \
+		upx --best --lzma $(BIN_DIR)/$(BINARY_NAME); \
+		echo "Compressed $(BIN_DIR)/$(BINARY_NAME) with UPX"; \
+	else \
+		echo "Note: install 'upx' (e.g. sudo apt install upx) to shrink to ~2.5MB"; \
+	fi
 
 ## build-target: Build for custom OS and ARCH (e.g. make build-target OS=linux ARCH=arm64)
 build-target:
@@ -29,7 +41,7 @@ build-target:
 		exit 1; \
 	fi
 	@mkdir -p $(BIN_DIR)
-	GOOS=$(OS) GOARCH=$(ARCH) $(GO) build $(LDFLAGS) -o $(BIN_DIR)/$(BINARY_NAME)-$(OS)-$(ARCH)$(if $(filter windows,$(OS)),.exe,) $(CMD_DIR)
+	GOOS=$(OS) GOARCH=$(ARCH) $(GO) build $(BUILD_FLAGS) -o $(BIN_DIR)/$(BINARY_NAME)-$(OS)-$(ARCH)$(if $(filter windows,$(OS)),.exe,) $(CMD_DIR)
 	@echo "Built $(BIN_DIR)/$(BINARY_NAME)-$(OS)-$(ARCH)$(if $(filter windows,$(OS)),.exe,)"
 
 ## build-linux: Build Linux binary (default ARCH=amd64, or make build-linux ARCH=arm64)
@@ -111,12 +123,12 @@ clean:
 ## release: Build cross-platform release binaries into dist/
 release: clean
 	@mkdir -p $(DIST_DIR)
-	GOOS=linux GOARCH=amd64 $(GO) build $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-linux-amd64 $(CMD_DIR)
-	GOOS=linux GOARCH=arm64 $(GO) build $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-linux-arm64 $(CMD_DIR)
-	GOOS=darwin GOARCH=amd64 $(GO) build $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-darwin-amd64 $(CMD_DIR)
-	GOOS=darwin GOARCH=arm64 $(GO) build $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-darwin-arm64 $(CMD_DIR)
-	GOOS=windows GOARCH=amd64 $(GO) build $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-windows-amd64.exe $(CMD_DIR)
-	GOOS=windows GOARCH=arm64 $(GO) build $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-windows-arm64.exe $(CMD_DIR)
+	GOOS=linux GOARCH=amd64 $(GO) build $(BUILD_FLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-linux-amd64 $(CMD_DIR)
+	GOOS=linux GOARCH=arm64 $(GO) build $(BUILD_FLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-linux-arm64 $(CMD_DIR)
+	GOOS=darwin GOARCH=amd64 $(GO) build $(BUILD_FLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-darwin-amd64 $(CMD_DIR)
+	GOOS=darwin GOARCH=arm64 $(GO) build $(BUILD_FLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-darwin-arm64 $(CMD_DIR)
+	GOOS=windows GOARCH=amd64 $(GO) build $(BUILD_FLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-windows-amd64.exe $(CMD_DIR)
+	GOOS=windows GOARCH=arm64 $(GO) build $(BUILD_FLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-windows-arm64.exe $(CMD_DIR)
 	@echo "Cross-platform release binaries compiled into $(DIST_DIR)/"
 
 ## help: Show this help message

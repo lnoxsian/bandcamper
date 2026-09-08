@@ -1,6 +1,7 @@
 # Bandcamper Justfile
 
 set dotenv-load := false
+export CGO_ENABLED := "0"
 
 binary_name := "bandcamper"
 cmd_dir := "./cmd/bandcamper"
@@ -16,13 +17,22 @@ default:
 # Build native binary for the current host to bin/bandcamper
 build:
     @mkdir -p {{bin_dir}}
-    go build -ldflags="{{ldflags}}" -o {{bin_dir}}/{{binary_name}} {{cmd_dir}}
+    go build -trimpath -ldflags="{{ldflags}}" -o {{bin_dir}}/{{binary_name}} {{cmd_dir}}
     @echo "Built {{bin_dir}}/{{binary_name}}"
+
+# Build ultra-compact binary with UPX compression (~2.5 MB)
+build-min: build
+    @if command -v upx >/dev/null 2>&1; then \
+        upx --best --lzma {{bin_dir}}/{{binary_name}}; \
+        echo "Compressed {{bin_dir}}/{{binary_name}} with UPX"; \
+    else \
+        echo "Note: install 'upx' (e.g. sudo apt install upx) to shrink to ~2.5MB"; \
+    fi
 
 # Build for custom target OS and ARCH (e.g. just build-target linux arm64)
 build-target os arch:
     @mkdir -p {{bin_dir}}
-    GOOS={{os}} GOARCH={{arch}} go build -ldflags="{{ldflags}}" -o {{bin_dir}}/{{binary_name}}-{{os}}-{{arch}}{{ if os == "windows" { ".exe" } else { "" } }} {{cmd_dir}}
+    GOOS={{os}} GOARCH={{arch}} go build -trimpath -ldflags="{{ldflags}}" -o {{bin_dir}}/{{binary_name}}-{{os}}-{{arch}}{{ if os == "windows" { ".exe" } else { "" } }} {{cmd_dir}}
     @echo "Built {{bin_dir}}/{{binary_name}}-{{os}}-{{arch}}{{ if os == "windows" { ".exe" } else { "" } }}"
 
 # Build for Linux (default arch: amd64; e.g. just build-linux arm64)
@@ -67,7 +77,7 @@ build-all: build-linux-amd64 build-linux-arm64 build-darwin-amd64 build-darwin-a
 
 # Install binary to $GOPATH/bin
 install:
-    go install -ldflags="{{ldflags}}" {{cmd_dir}}
+    go install -trimpath -ldflags="{{ldflags}}" {{cmd_dir}}
     @echo "Installed {{binary_name}}"
 
 # Run the application with custom arguments (e.g. just run --help)
@@ -104,10 +114,10 @@ clean:
 # Build cross-platform release binaries into dist/
 release: clean
     @mkdir -p {{dist_dir}}
-    GOOS=linux GOARCH=amd64 go build -ldflags="{{ldflags}}" -o {{dist_dir}}/{{binary_name}}-linux-amd64 {{cmd_dir}}
-    GOOS=linux GOARCH=arm64 go build -ldflags="{{ldflags}}" -o {{dist_dir}}/{{binary_name}}-linux-arm64 {{cmd_dir}}
-    GOOS=darwin GOARCH=amd64 go build -ldflags="{{ldflags}}" -o {{dist_dir}}/{{binary_name}}-darwin-amd64 {{cmd_dir}}
-    GOOS=darwin GOARCH=arm64 go build -ldflags="{{ldflags}}" -o {{dist_dir}}/{{binary_name}}-darwin-arm64 {{cmd_dir}}
-    GOOS=windows GOARCH=amd64 go build -ldflags="{{ldflags}}" -o {{dist_dir}}/{{binary_name}}-windows-amd64.exe {{cmd_dir}}
-    GOOS=windows GOARCH=arm64 go build -ldflags="{{ldflags}}" -o {{dist_dir}}/{{binary_name}}-windows-arm64.exe {{cmd_dir}}
+    GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="{{ldflags}}" -o {{dist_dir}}/{{binary_name}}-linux-amd64 {{cmd_dir}}
+    GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="{{ldflags}}" -o {{dist_dir}}/{{binary_name}}-linux-arm64 {{cmd_dir}}
+    GOOS=darwin GOARCH=amd64 go build -trimpath -ldflags="{{ldflags}}" -o {{dist_dir}}/{{binary_name}}-darwin-amd64 {{cmd_dir}}
+    GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags="{{ldflags}}" -o {{dist_dir}}/{{binary_name}}-darwin-arm64 {{cmd_dir}}
+    GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="{{ldflags}}" -o {{dist_dir}}/{{binary_name}}-windows-amd64.exe {{cmd_dir}}
+    GOOS=windows GOARCH=arm64 go build -trimpath -ldflags="{{ldflags}}" -o {{dist_dir}}/{{binary_name}}-windows-arm64.exe {{cmd_dir}}
     @echo "Cross-platform release binaries compiled into {{dist_dir}}/"
