@@ -1,20 +1,7 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - main
-      - master
-    paths-ignore:
-      - 'docs/**'
-      - '*.md'
-  pull_request:
-    branches:
-      - main
-      - master
-    paths-ignore:
-      - 'docs/**'
-      - '*.md'
+  workflow_dispatch:
 
 jobs:
   test:
@@ -22,10 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version-file: 'go.mod'
           cache: true

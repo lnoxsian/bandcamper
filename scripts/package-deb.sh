@@ -41,9 +41,10 @@ if [ -z "${RAW_VERSION}" ]; then
 fi
 VERSION="${RAW_VERSION#v}"
 
-# Output directory
-OUTPUT_DIR="${3:-${REPO_DIR}/dist}"
-mkdir -p "${OUTPUT_DIR}"
+# Output directory (resolve to absolute path)
+RAW_OUTPUT_DIR="${3:-${REPO_DIR}/dist}"
+mkdir -p "${RAW_OUTPUT_DIR}"
+OUTPUT_DIR="$(cd "${RAW_OUTPUT_DIR}" && pwd)"
 
 echo "==> Packaging bandcamper ${VERSION} for Debian (${DEB_ARCH})..."
 
@@ -77,6 +78,9 @@ if [ -z "${BIN_SRC}" ]; then
         -o "${BIN_SRC}" \
         "${REPO_DIR}/cmd/bandcamper"
 fi
+
+# Ensure BIN_SRC is an absolute path
+BIN_SRC="$(cd "$(dirname "${BIN_SRC}")" && pwd)/$(basename "${BIN_SRC}")"
 
 # Create temporary staging directory
 STAGE_DIR="$(mktemp -d)"
