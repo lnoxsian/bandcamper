@@ -1,13 +1,31 @@
-# Binaries
+# Compiled binaries and build output
+bin/
+dist/
 bandcamper
 bandcamper.exe
+bandcamper-*
 *.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test artifacts and coverage
 *.test
 *.out
+coverage.out
+
+# Downloaded music / output
+downloads/
+Music/
 
 # OS files
 .DS_Store
 Thumbs.db
 
-# Output
-downloads/
+# Editor & IDE artifacts
+*.swp
+*.swo
+*~
+.idea/
+.vscode/

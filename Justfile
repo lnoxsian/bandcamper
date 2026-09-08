@@ -1,0 +1,113 @@
+# Bandcamper Justfile
+
+set dotenv-load := false
+
+binary_name := "bandcamper"
+cmd_dir := "./cmd/bandcamper"
+bin_dir := "./bin"
+dist_dir := "./dist"
+version := `git describe --tags --always --dirty 2>/dev/null || echo "1.0.0"`
+ldflags := "-s -w -X main.Version=" + version
+
+# List available recipes
+default:
+    @just --list
+
+# Build native binary for the current host to bin/bandcamper
+build:
+    @mkdir -p {{bin_dir}}
+    go build -ldflags="{{ldflags}}" -o {{bin_dir}}/{{binary_name}} {{cmd_dir}}
+    @echo "Built {{bin_dir}}/{{binary_name}}"
+
+# Build for custom target OS and ARCH (e.g. just build-target linux arm64)
+build-target os arch:
+    @mkdir -p {{bin_dir}}
+    GOOS={{os}} GOARCH={{arch}} go build -ldflags="{{ldflags}}" -o {{bin_dir}}/{{binary_name}}-{{os}}-{{arch}}{{ if os == "windows" { ".exe" } else { "" } }} {{cmd_dir}}
+    @echo "Built {{bin_dir}}/{{binary_name}}-{{os}}-{{arch}}{{ if os == "windows" { ".exe" } else { "" } }}"
+
+# Build for Linux (default arch: amd64; e.g. just build-linux arm64)
+build-linux arch="amd64":
+    @just build-target linux {{arch}}
+
+# Build Linux x86_64
+build-linux-amd64:
+    @just build-target linux amd64
+
+# Build Linux ARM64
+build-linux-arm64:
+    @just build-target linux arm64
+
+# Build for macOS (default arch: arm64; e.g. just build-darwin amd64)
+build-darwin arch="arm64":
+    @just build-target darwin {{arch}}
+
+# Build macOS Intel x86_64
+build-darwin-amd64:
+    @just build-target darwin amd64
+
+# Build macOS Apple Silicon ARM64
+build-darwin-arm64:
+    @just build-target darwin arm64
+
+# Build for Windows (default arch: amd64; e.g. just build-windows arm64)
+build-windows arch="amd64":
+    @just build-target windows {{arch}}
+
+# Build Windows x86_64 .exe
+build-windows-amd64:
+    @just build-target windows amd64
+
+# Build Windows ARM64 .exe
+build-windows-arm64:
+    @just build-target windows arm64
+
+# Build binaries for all supported platforms into bin/
+build-all: build-linux-amd64 build-linux-arm64 build-darwin-amd64 build-darwin-arm64 build-windows-amd64 build-windows-arm64
+    @echo "All platform binaries compiled into {{bin_dir}}/"
+
+# Install binary to $GOPATH/bin
+install:
+    go install -ldflags="{{ldflags}}" {{cmd_dir}}
+    @echo "Installed {{binary_name}}"
+
+# Run the application with custom arguments (e.g. just run --help)
+run *args:
+    go run {{cmd_dir}} {{args}}
+
+# Run tests with custom args (e.g. just test -run TestResolveURL or just test ./internal/bandcamp/...)
+test *args:
+    go test {{ if args == "" { "-v ./..." } else { args } }}
+
+# Run tests with data race detector and custom args
+test-race *args:
+    go test -race {{ if args == "" { "-v ./..." } else { args } }}
+
+# Run tests and generate coverage report
+test-cover *args:
+    @mkdir -p {{bin_dir}}
+    go test -coverprofile={{bin_dir}}/coverage.out {{ if args == "" { "./..." } else { args } }}
+    go tool cover -func={{bin_dir}}/coverage.out
+
+# Run go vet static analysis
+vet:
+    go vet ./...
+
+# Format all Go source files
+fmt:
+    go fmt ./...
+
+# Clean compiled binaries and test/build artifacts
+clean:
+    rm -rf {{bin_dir}} {{dist_dir}} {{binary_name}} {{binary_name}}.exe coverage.out
+    @echo "Cleaned build artifacts."
+
+# Build cross-platform release binaries into dist/
+release: clean
+    @mkdir -p {{dist_dir}}
+    GOOS=linux GOARCH=amd64 go build -ldflags="{{ldflags}}" -o {{dist_dir}}/{{binary_name}}-linux-amd64 {{cmd_dir}}
+    GOOS=linux GOARCH=arm64 go build -ldflags="{{ldflags}}" -o {{dist_dir}}/{{binary_name}}-linux-arm64 {{cmd_dir}}
+    GOOS=darwin GOARCH=amd64 go build -ldflags="{{ldflags}}" -o {{dist_dir}}/{{binary_name}}-darwin-amd64 {{cmd_dir}}
+    GOOS=darwin GOARCH=arm64 go build -ldflags="{{ldflags}}" -o {{dist_dir}}/{{binary_name}}-darwin-arm64 {{cmd_dir}}
+    GOOS=windows GOARCH=amd64 go build -ldflags="{{ldflags}}" -o {{dist_dir}}/{{binary_name}}-windows-amd64.exe {{cmd_dir}}
+    GOOS=windows GOARCH=arm64 go build -ldflags="{{ldflags}}" -o {{dist_dir}}/{{binary_name}}-windows-arm64.exe {{cmd_dir}}
+    @echo "Cross-platform release binaries compiled into {{dist_dir}}/"

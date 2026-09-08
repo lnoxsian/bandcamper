@@ -183,6 +183,26 @@ go vet ./...
 
 ---
 
+## Build & Development
+
+You can use either `make` or `just`:
+
+| Action | `make` command | `just` command |
+| :--- | :--- | :--- |
+| **Build native binary** | `make build` | `just build` |
+| **Build for Linux** | `make build-linux` *(or `ARCH=arm64`)* | `just build-linux` *(or `arm64`)* |
+| **Build for macOS** | `make build-darwin` *(or `ARCH=amd64`)* | `just build-darwin` *(or `amd64`)* |
+| **Build for Windows** | `make build-windows` *(or `ARCH=arm64`)* | `just build-windows` *(or `arm64`)* |
+| **Build custom target** | `make build-target OS=linux ARCH=arm64` | `just build-target linux arm64` |
+| **Build all platforms** | `make build-all` | `just build-all` |
+| **Build release packages**| `make release` | `just release` |
+| **Run tests** | `make test` | `just test` |
+| **Run specific test** | `make test ARGS="-run TestResolveURL"` | `just test -run TestResolveURL` |
+| **Run race detector** | `make test-race` | `just test-race` |
+| **Clean artifacts** | `make clean` | `just clean` |
+
+---
+
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
