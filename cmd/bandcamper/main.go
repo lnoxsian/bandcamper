@@ -16,6 +16,7 @@ import (
 	"github.com/lnoxsian/bandcamper/internal/config"
 	"github.com/lnoxsian/bandcamper/internal/downloader"
 	"github.com/lnoxsian/bandcamper/internal/storage"
+	"github.com/lnoxsian/bandcamper/internal/terminal"
 )
 
 var Version = "1.0.0"
@@ -111,6 +112,8 @@ func main() {
 }
 
 func run(args []string) int {
+	termInfo := terminal.Init()
+
 	fs := flag.NewFlagSet("bandcamper", flag.ContinueOnError)
 	fs.SetOutput(os.Stderr)
 
@@ -259,11 +262,27 @@ func run(args []string) int {
 		cfg.Quiet = true
 	}
 
-	// Resolve color setting (respecting NO_COLOR environment standard and flags)
+	// Resolve color setting (respecting OS capabilities, NO_COLOR standard, and flags)
+	colorExplicitlyEnabled := false
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == "color" && useColor {
+			colorExplicitlyEnabled = true
+		}
+	})
+
 	if os.Getenv("NO_COLOR") != "" || noColor || !useColor {
+		cfg.Color = false
+	} else if !colorExplicitlyEnabled && !termInfo.ColorSupported {
+		// If the OS console (e.g. Windows conhost without VT) cannot render ANSI,
+		// or output is a dumb terminal, disable color to avoid printing raw escape sequences.
 		cfg.Color = false
 	}
 	clr := Colorizer{Enabled: cfg.Color}
+
+	if cfg.Verbose && !cfg.Quiet {
+		fmt.Fprintf(os.Stderr, "[Debug] OS: %s, Terminal: %v, Color: %v (VT: %v)\n",
+			termInfo.OS, termInfo.IsTerminal, cfg.Color, termInfo.VTEnabled)
+	}
 
 	// Collect target URLs from positional arguments and --file
 	var targetURLs []string
