@@ -117,7 +117,8 @@ Cross-platform builds and GitHub Releases are automated via `.github/workflows/r
 - **Verification**: Executes `go vet` and `go test -race ./...` before building.
 - **Matrix**: Builds 6 cross-platform targets (`linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`, `windows/amd64`, `windows/arm64`).
 - **Packaging**:
-  - Compressed `.tar.gz` (Linux/macOS) and `.zip` (Windows) archives bundling docs, shell completions, and `install.sh`.
+  - Compressed `.tar.gz` (Linux/macOS) archives bundling docs, shell completions, and `install.sh`.
+  - Compressed `.zip` (Windows) archives bundling docs, `install.bat`, and `install.ps1`.
   - Debian packages: `bandcamper_<version>_amd64.deb` and `bandcamper_<version>_arm64.deb`.
   - RPM packages: `bandcamper-<version>-1.x86_64.rpm` and `bandcamper-<version>-1.aarch64.rpm`.
   - Standalone binaries and a SHA-256 `checksums.txt` manifest.

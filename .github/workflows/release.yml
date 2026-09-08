@@ -144,16 +144,22 @@ jobs:
             [ -f README.md ] && cp README.md "${stage_dir}/"
             [ -f LICENSE ] && cp LICENSE "${stage_dir}/"
 
-            # Copy install script into package
-            if [ -f scripts/linux/install.sh ]; then
-              cp scripts/linux/install.sh "${stage_dir}/install.sh"
-              chmod +x "${stage_dir}/install.sh"
-            fi
+            # Copy install scripts and completions based on target OS
+            if [ "${os}" = "windows" ]; then
+              [ -f scripts/windows/install.bat ] && cp scripts/windows/install.bat "${stage_dir}/install.bat"
+              [ -f scripts/windows/install.ps1 ] && cp scripts/windows/install.ps1 "${stage_dir}/install.ps1"
+            else
+              # Copy Linux/Unix install script into package
+              if [ -f scripts/linux/install.sh ]; then
+                cp scripts/linux/install.sh "${stage_dir}/install.sh"
+                chmod +x "${stage_dir}/install.sh"
+              fi
 
-            # Copy shell completions into package
-            if [ -d assets/completions ]; then
-              mkdir -p "${stage_dir}/completions"
-              cp assets/completions/* "${stage_dir}/completions/"
+              # Copy shell completions into package (Unix only)
+              if [ -d assets/completions ]; then
+                mkdir -p "${stage_dir}/completions"
+                cp assets/completions/* "${stage_dir}/completions/"
+              fi
             fi
 
             # Create archive (.zip for windows, .tar.gz for unix)
