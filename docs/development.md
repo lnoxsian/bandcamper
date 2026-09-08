@@ -92,6 +92,18 @@ just release
 
 The recipes place development binaries in `bin/` and release binaries in `dist/`.
 
+### GitHub Actions release pipeline
+
+Cross-platform builds and GitHub Releases are automated via `.github/workflows/release.yml`:
+
+- **Triggers**: Pushing any tag matching `v*` (e.g. `v0.1.0`), or manual trigger via **Actions → Release → Run workflow**.
+- **Verification**: Executes `go vet` and `go test -race ./...` before building.
+- **Matrix**: Builds 6 cross-platform targets (`linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`, `windows/amd64`, `windows/arm64`).
+- **Packaging**: Generates `.tar.gz` (Linux/macOS) and `.zip` (Windows) packages with `README.md` and `LICENSE`, standalone binaries, and a `checksums.txt` SHA-256 manifest.
+- **Publication**: Automatically attaches all assets and auto-generated release notes to the GitHub Release.
+
+A companion `.github/workflows/ci.yml` runs test and lint validation on all pull requests and main-branch pushes.
+
 ## Version management
 
 The project version is tracked in the root [`VERSION`](../VERSION) file and injected during compilation via `-ldflags`.

@@ -1,0 +1,170 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name for release (e.g. v0.1.0, defaults to VERSION file)'
+        required: false
+        type: string
+        default: ''
+      draft:
+        description: 'Create release as draft'
+        required: false
+        type: boolean
+        default: false
+      prerelease:
+        description: 'Mark release as pre-release'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Run Tests & Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      - name: Verify dependencies
+        run: go mod verify
+
+      - name: Run static analysis (go vet)
+        run: go vet ./...
+
+      - name: Run unit & integration tests
+        run: go test -race -v ./...
+
+  release:
+    name: Build & Publish Release
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      - name: Determine Version and Tag
+        id: version
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.tag_name }}" ]; then
+            INPUT_TAG="${{ github.event.inputs.tag_name }}"
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            INPUT_TAG="${{ github.ref_name }}"
+          else
+            VER=$(cat VERSION 2>/dev/null || echo "0.1.0")
+            INPUT_TAG="v${VER#v}"
+          fi
+
+          if [[ "$INPUT_TAG" == v* ]]; then
+            RELEASE_TAG="$INPUT_TAG"
+            APP_VERSION="${INPUT_TAG#v}"
+          else
+            RELEASE_TAG="v$INPUT_TAG"
+            APP_VERSION="$INPUT_TAG"
+          fi
+
+          echo "tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${APP_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Release Tag: ${RELEASE_TAG}"
+          echo "App Version: ${APP_VERSION}"
+
+      - name: Build Cross-Platform Binaries & Packages
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          DIST_DIR="dist"
+          rm -rf "${DIST_DIR}"
+          mkdir -p "${DIST_DIR}"
+
+          TARGETS=(
+            "linux/amd64"
+            "linux/arm64"
+            "darwin/amd64"
+            "darwin/arm64"
+            "windows/amd64"
+            "windows/arm64"
+          )
+
+          for target in "${TARGETS[@]}"; do
+            os="${target%/*}"
+            arch="${target#*/}"
+            ext=""
+            if [ "${os}" = "windows" ]; then
+              ext=".exe"
+            fi
+
+            target_name="bandcamper-${os}-${arch}"
+            bin_name="bandcamper${ext}"
+            stage_dir="stage_${os}_${arch}"
+
+            echo "::group::Building ${target_name}"
+            rm -rf "${stage_dir}"
+            mkdir -p "${stage_dir}"
+
+            GOOS="${os}" GOARCH="${arch}" CGO_ENABLED=0 go build \
+              -trimpath \
+              -ldflags="-s -w -X main.Version=${APP_VERSION}" \
+              -o "${stage_dir}/${bin_name}" \
+              ./cmd/bandcamper
+
+            # Copy standalone binary
+            cp "${stage_dir}/${bin_name}" "${DIST_DIR}/${target_name}${ext}"
+
+            # Copy docs into package
+            [ -f README.md ] && cp README.md "${stage_dir}/"
+            [ -f LICENSE ] && cp LICENSE "${stage_dir}/"
+
+            # Create archive (.zip for windows, .tar.gz for unix)
+            if [ "${os}" = "windows" ]; then
+              (cd "${stage_dir}" && zip -q -r "../${DIST_DIR}/${target_name}.zip" .)
+            else
+              tar -czf "${DIST_DIR}/${target_name}.tar.gz" -C "${stage_dir}" .
+            fi
+
+            rm -rf "${stage_dir}"
+            echo "::endgroup::"
+          done
+
+          echo "::group::Generate Checksums"
+          cd "${DIST_DIR}"
+          sha256sum * > checksums.txt
+          cat checksums.txt
+          echo "::endgroup::"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Bandcamper ${{ steps.version.outputs.tag }}
+          files: dist/*
+          draft: ${{ github.event.inputs.draft == 'true' }}
+          prerelease: ${{ github.event.inputs.prerelease == 'true' }}
+          generate_release_notes: true

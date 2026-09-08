@@ -38,6 +38,10 @@ Bandcamper is a single-binary CLI capable of resolving Bandcamp artist, album, a
 
 ## Installation
 
+### Pre-compiled Binaries
+
+Download the latest pre-compiled binary or archive for your platform (Linux, macOS, or Windows on `amd64` or `arm64`) from the [GitHub Releases](https://github.com/lnoxsian/bandcamper/releases) page.
+
 ### From Source
 
 ```bash
