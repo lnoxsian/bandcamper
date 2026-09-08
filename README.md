@@ -83,128 +83,55 @@ bandcamper --file urls.txt
 | `--output <dir>` | `-o` | `~/Music` | Output root directory |
 | `--jobs <n>` | `-j` | `4` | Number of concurrent download workers |
 | `--retry <n>` | | `3` | Maximum retry attempts for transient failures |
-| `--filename <tmpl>` | | `{tracknumber} - {title}.mp3` | Filename template |
-| `--directory <tmpl>` | | `{artist}/{album}` | Directory template |
-| `--playlist <fmt>` | | `""` | Generate playlist (`m3u`, `pls`, `wpl`, `zpl`) |
-| `--skip-existing` | | `true` | Skip downloading already existing files |
-| `--overwrite` | | `false` | Overwrite existing files |
-| `--dry-run` | | `false` | Preview files without downloading |
-| `--no-tags` | | `false` | Disable ID3 metadata embedding |
-| `--no-artwork` | | `false` | Disable embedding artwork into audio |
-| `--no-lyrics` | | `false` | Disable embedding lyrics into audio |
-| `--no-save-artwork` | | `false` | Do not save `cover.jpg` file |
-| `--config <file>` | | *(OS default)* | Path to custom TOML config file |
-| `-v, --verbose` | | `false` | Enable verbose debug output |
-| `-q, --quiet` | | `false` | Suppress output except errors |
-| `--color` | | `true` | Enable ANSI colored output |
-| `--no-color` | | `false` | Disable ANSI colored output |
-| `--version` | | | Display version information |
-| `--help` | `-h` | | Show help message |
+# Bandcamper
 
----
+Bandcamper is a lightweight, cross-platform Bandcamp downloader written in Go. It resolves public artist, album, and track pages, downloads available MP3 streams, writes metadata and artwork, and can generate playlists.
 
-## Templates
+## Quick start
 
-Supported template placeholders for `--filename` and `--directory`:
+Build from source:
 
-- `{artist}`: Track or release artist
-- `{album}`: Album or release title
-- `{albumartist}`: Album artist
-- `{title}`: Track title
-- `{tracknumber}`: Track number (zero-padded, e.g. `01`, `02`)
-- `{tracktotal}`: Total number of tracks in release
-- `{year}`: Release year (e.g. `2024`)
-- `{genre}`: Genre tag
-
-### Examples
-
-```bash
-# Save into Year - Album folders
-bandcamper --directory "{artist}/{year} - {album}" https://artist.bandcamp.com/album/example
-
-# Filename with artist and track number
-bandcamper --filename "{artist} - {tracknumber} - {title}.mp3" https://artist.bandcamp.com/album/example
+```sh
+go build -o bandcamper ./cmd/bandcamper
 ```
 
----
+Download an album:
 
-## Configuration File
-
-Bandcamper can be configured using a `config.toml` file.
-
-Default paths:
-- **Linux/BSD**: `~/.config/bandcamper/config.toml`
-- **macOS**: `~/Library/Application Support/bandcamper/config.toml`
-- **Windows**: `%APPDATA%\bandcamper\config.toml`
-
-### Example `config.toml`
-
-```toml
-output = "~/Music"
-workers = 4
-retry_count = 3
-skip_existing = true
-overwrite = false
-
-directory = "{artist}/{album}"
-filename = "{tracknumber} - {title}.mp3"
-
-embed_artwork = true
-save_artwork = true
-embed_lyrics = true
-embed_tags = true
-
-playlist = "m3u"
+```sh
+./bandcamper https://artist.bandcamp.com/album/example-album
 ```
 
----
+Preview the resolved metadata and output paths without downloading:
 
-## Exit Codes
-
-Bandcamper returns meaningful exit codes suitable for automation and scripting:
-
-- `0`: Success
-- `1`: General failure
-- `2`: Invalid command line arguments
-- `3`: Invalid Bandcamp URL
-- `4`: Parsing failure
-- `5`: Download failure
-- `6`: Metadata failure
-
----
-
-## Testing
-
-Run unit and integration test suites:
-
-```bash
-go test ./...
-go test -race ./...
-go vet ./...
+```sh
+./bandcamper --dry-run https://artist.bandcamp.com/album/example-album
 ```
 
----
+## Documentation
 
-## Build & Development
+See the [documentation index](docs/README.md) for the complete guides:
 
-You can use either `make` or `just`:
+- [User guide](docs/user-guide.md): installation, supported URLs, usage, output behavior, and troubleshooting.
+- [Configuration reference](docs/configuration.md): CLI flags, TOML settings, templates, and precedence.
+- [Development guide](docs/development.md): repository layout, tests, builds, and release targets.
+- [Implementation plan](docs/plan.md): the original project plan and design direction.
 
-| Action | `make` command | `just` command |
-| :--- | :--- | :--- |
-| **Build native binary** | `make build` | `just build` |
-| **Build for Linux** | `make build-linux` *(or `ARCH=arm64`)* | `just build-linux` *(or `arm64`)* |
-| **Build for macOS** | `make build-darwin` *(or `ARCH=amd64`)* | `just build-darwin` *(or `amd64`)* |
-| **Build for Windows** | `make build-windows` *(or `ARCH=arm64`)* | `just build-windows` *(or `arm64`)* |
-| **Build custom target** | `make build-target OS=linux ARCH=arm64` | `just build-target linux arm64` |
-| **Build all platforms** | `make build-all` | `just build-all` |
-| **Build release packages**| `make release` | `just release` |
-| **Run tests** | `make test` | `just test` |
-| **Run specific test** | `make test ARGS="-run TestResolveURL"` | `just test -run TestResolveURL` |
-| **Run race detector** | `make test-race` | `just test-race` |
-| **Clean artifacts** | `make clean` | `just clean` |
+## Highlights
 
----
+- Concurrent downloads with retry handling and cancellation.
+- Atomic file storage with existing-file protection.
+- ID3v2 tags, lyrics, embedded artwork, and saved cover art.
+- M3U, PLS, WPL, and ZPL playlist generation.
+- Configurable output directories and filename templates.
+- Native binaries for Linux, macOS, and Windows on `amd64` and `arm64`.
+
+Bandcamper does not bypass authentication, DRM, purchase restrictions, or other access controls. Downloads remain subject to Bandcamp's terms and the rights held by the artist or label.
 
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
+
+## Credits
+
+Bandcamper was inspired by the feature set and overall idea of [Otiel/BandcampDownloader](https://github.com/Otiel/BandcampDownloader). Credit and thanks to its author, [Otiel](https://github.com/Otiel), for the original project.
+Bandcamper can be configured using a `config.toml` file.
