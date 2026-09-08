@@ -17,7 +17,9 @@ GO ?= go
         build-darwin build-darwin-amd64 build-darwin-arm64 \
         build-windows build-windows-amd64 build-windows-arm64 \
         version set-version bump-patch bump-minor bump-major \
-        install install-completions run test test-race test-cover vet fmt clean release help
+        install install-completions package-deb package-deb-all \
+        package-rpm package-rpm-all packages \
+        run test test-race test-cover vet fmt clean release help
 
 all: build
 
@@ -140,6 +142,27 @@ release: clean
 	GOOS=windows GOARCH=amd64 $(GO) build $(BUILD_FLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-windows-amd64.exe $(CMD_DIR)
 	GOOS=windows GOARCH=arm64 $(GO) build $(BUILD_FLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-windows-arm64.exe $(CMD_DIR)
 	@echo "Cross-platform release binaries compiled into $(DIST_DIR)/"
+
+## package-deb: Build Debian (.deb) package for current or specified ARCH (e.g. make package-deb ARCH=amd64)
+package-deb:
+	@./scripts/package-deb.sh $(or $(ARCH),amd64) $(VERSION) $(DIST_DIR)
+
+## package-deb-all: Build Debian (.deb) packages for all architectures (amd64, arm64)
+package-deb-all:
+	@./scripts/package-deb.sh amd64 $(VERSION) $(DIST_DIR)
+	@./scripts/package-deb.sh arm64 $(VERSION) $(DIST_DIR)
+
+## package-rpm: Build RPM package for current or specified ARCH (e.g. make package-rpm ARCH=x86_64)
+package-rpm:
+	@./scripts/package-rpm.sh $(or $(ARCH),x86_64) $(VERSION) $(DIST_DIR)
+
+## package-rpm-all: Build RPM packages for all architectures (x86_64, aarch64)
+package-rpm-all:
+	@./scripts/package-rpm.sh x86_64 $(VERSION) $(DIST_DIR)
+	@./scripts/package-rpm.sh aarch64 $(VERSION) $(DIST_DIR)
+
+## packages: Build all Debian (.deb) and RPM packages into dist/
+packages: package-deb-all package-rpm-all
 
 ## version: Display the current version from the VERSION file
 version:

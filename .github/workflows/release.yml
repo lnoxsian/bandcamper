@@ -89,6 +89,11 @@ jobs:
           echo "Release Tag: ${RELEASE_TAG}"
           echo "App Version: ${APP_VERSION}"
 
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends rpm
+
       - name: Build Cross-Platform Binaries & Packages
         env:
           APP_VERSION: ${{ steps.version.outputs.version }}
@@ -161,6 +166,15 @@ jobs:
             rm -rf "${stage_dir}"
             echo "::endgroup::"
           done
+
+          # Build Linux native packages (.deb and .rpm)
+          echo "::group::Building Debian (.deb) and RPM (.rpm) packages"
+          chmod +x scripts/package-deb.sh scripts/package-rpm.sh
+          ./scripts/package-deb.sh amd64 "${APP_VERSION}" "${DIST_DIR}"
+          ./scripts/package-deb.sh arm64 "${APP_VERSION}" "${DIST_DIR}"
+          ./scripts/package-rpm.sh x86_64 "${APP_VERSION}" "${DIST_DIR}"
+          ./scripts/package-rpm.sh aarch64 "${APP_VERSION}" "${DIST_DIR}"
+          echo "::endgroup::"
 
           echo "::group::Generate Checksums"
           cd "${DIST_DIR}"
