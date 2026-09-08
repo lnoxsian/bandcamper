@@ -1,9 +1,6 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
       tag_name:
@@ -141,6 +138,12 @@ jobs:
             # Copy docs into package
             [ -f README.md ] && cp README.md "${stage_dir}/"
             [ -f LICENSE ] && cp LICENSE "${stage_dir}/"
+
+            # Copy install script into package
+            if [ -f scripts/install.sh ]; then
+              cp scripts/install.sh "${stage_dir}/install.sh"
+              chmod +x "${stage_dir}/install.sh"
+            fi
 
             # Copy shell completions into package
             if [ -d assets/completions ]; then

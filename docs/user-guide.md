@@ -2,6 +2,20 @@
 
 ## Installation
 
+### Pre-compiled Release Packages
+
+Download the release `.tar.gz` for your architecture from GitHub Releases, extract it, and execute the bundled installer:
+
+```sh
+tar -xzf bandcamper-linux-amd64.tar.gz
+sudo ./install.sh
+```
+
+The script automatically:
+1. Installs the `bandcamper` executable to `/usr/bin/bandcamper`.
+2. Inspects your active shell (`bash`, `zsh`, or `fish`).
+3. Installs and registers the appropriate tab-completion script to the system/user completions directory.
+
 ### Build from source
 
 Requirements:

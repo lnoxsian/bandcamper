@@ -96,7 +96,7 @@ The recipes place development binaries in `bin/` and release binaries in `dist/`
 
 Cross-platform builds and GitHub Releases are automated via `.github/workflows/release.yml`:
 
-- **Triggers**: Pushing any tag matching `v*` (e.g. `v0.1.0`), or manual trigger via **Actions → Release → Run workflow**.
+- **Triggers**: Manual execution via **Actions → Release → Run workflow** (`workflow_dispatch`), where you can optionally specify a tag name (defaults to `VERSION`), draft status, or pre-release status.
 - **Verification**: Executes `go vet` and `go test -race ./...` before building.
 - **Matrix**: Builds 6 cross-platform targets (`linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`, `windows/amd64`, `windows/arm64`).
 - **Packaging**: Generates `.tar.gz` (Linux/macOS) and `.zip` (Windows) packages with `README.md` and `LICENSE`, standalone binaries, and a `checksums.txt` SHA-256 manifest.
