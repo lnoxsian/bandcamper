@@ -182,11 +182,13 @@ func run(args []string) int {
 		fmt.Fprintf(os.Stderr, "Bandcamper %s — Fast, robust Bandcamp downloader\n\n", Version)
 		fmt.Fprintf(os.Stderr, "Usage:\n")
 		fmt.Fprintf(os.Stderr, "  bandcamper [options] <URL>...\n")
+		fmt.Fprintf(os.Stderr, "  bandcamper [options] <URL1>,<URL2>...\n")
 		fmt.Fprintf(os.Stderr, "  bandcamper [options] --file <urls.txt>\n\n")
 		fmt.Fprintf(os.Stderr, "Options:\n")
 		fs.PrintDefaults()
 		fmt.Fprintf(os.Stderr, "\nExamples:\n")
 		fmt.Fprintf(os.Stderr, "  bandcamper https://artist.bandcamp.com/album/example\n")
+		fmt.Fprintf(os.Stderr, "  bandcamper https://artist1.bandcamp.com/album/a,https://artist2.bandcamp.com/album/b\n")
 		fmt.Fprintf(os.Stderr, "  bandcamper --output ~/Music --jobs 4 --playlist m3u https://artist.bandcamp.com\n")
 		fmt.Fprintf(os.Stderr, "  bandcamper --dry-run https://artist.bandcamp.com/track/example-track\n")
 	}
@@ -294,7 +296,14 @@ func run(args []string) int {
 		}
 		targetURLs = append(targetURLs, fileURLs...)
 	}
-	targetURLs = append(targetURLs, fs.Args()...)
+	for _, arg := range fs.Args() {
+		for _, u := range strings.Split(arg, ",") {
+			u = strings.TrimSpace(u)
+			if u != "" {
+				targetURLs = append(targetURLs, u)
+			}
+		}
+	}
 
 	if len(targetURLs) == 0 {
 		fmt.Fprintf(os.Stderr, "Error: No Bandcamp URLs provided.\n\n")
@@ -470,7 +479,12 @@ func readLines(path string) ([]string, error) {
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line != "" && !strings.HasPrefix(line, "#") {
-			lines = append(lines, line)
+			for _, part := range strings.Split(line, ",") {
+				part = strings.TrimSpace(part)
+				if part != "" {
+					lines = append(lines, part)
+				}
+			}
 		}
 	}
 

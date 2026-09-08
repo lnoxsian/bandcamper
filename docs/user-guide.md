@@ -85,12 +85,15 @@ https://artist.bandcamp.com/track/track-name
 
 An artist URL expands to the releases found in the artist's public discography. An album URL downloads that release. A track URL downloads the release context containing that track.
 
-Multiple URLs can be supplied in one invocation:
+Multiple URLs can be supplied in one invocation (space-separated or comma-separated):
 
 ```sh
 bandcamper \
   https://artist.bandcamp.com/album/first-release \
   https://artist.bandcamp.com/album/second-release
+
+# Or comma-separated:
+bandcamper https://artist.bandcamp.com/album/first-release,https://artist.bandcamp.com/album/second-release
 ```
 
 URLs can also be read from a file. Empty lines and lines beginning with `#` are ignored:

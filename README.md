@@ -93,9 +93,10 @@ Download all releases by an artist (entire discography):
 bandcamper https://artist.bandcamp.com
 ```
 
-Download multiple URLs:
+Download multiple URLs (space-separated or comma-separated):
 ```bash
 bandcamper https://artist.bandcamp.com/album/one https://artist.bandcamp.com/album/two
+bandcamper https://artist.bandcamp.com/album/one,https://artist.bandcamp.com/album/two
 ```
 
 Download URLs from a text file:
