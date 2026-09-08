@@ -148,14 +148,26 @@ jobs:
             if [ "${os}" = "windows" ]; then
               [ -f scripts/windows/install.bat ] && cp scripts/windows/install.bat "${stage_dir}/install.bat"
               [ -f scripts/windows/install.ps1 ] && cp scripts/windows/install.ps1 "${stage_dir}/install.ps1"
+            elif [ "${os}" = "darwin" ]; then
+              # Copy macOS install script into package
+              if [ -f scripts/macos/install.sh ]; then
+                cp scripts/macos/install.sh "${stage_dir}/install.sh"
+                chmod +x "${stage_dir}/install.sh"
+              fi
+
+              # Copy shell completions into package
+              if [ -d assets/completions ]; then
+                mkdir -p "${stage_dir}/completions"
+                cp assets/completions/* "${stage_dir}/completions/"
+              fi
             else
-              # Copy Linux/Unix install script into package
+              # Copy Linux install script into package
               if [ -f scripts/linux/install.sh ]; then
                 cp scripts/linux/install.sh "${stage_dir}/install.sh"
                 chmod +x "${stage_dir}/install.sh"
               fi
 
-              # Copy shell completions into package (Unix only)
+              # Copy shell completions into package
               if [ -d assets/completions ]; then
                 mkdir -p "${stage_dir}/completions"
                 cp assets/completions/* "${stage_dir}/completions/"
