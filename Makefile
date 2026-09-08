@@ -145,21 +145,21 @@ release: clean
 
 ## package-deb: Build Debian (.deb) package for current or specified ARCH (e.g. make package-deb ARCH=amd64)
 package-deb:
-	@./scripts/package-deb.sh $(or $(ARCH),amd64) $(VERSION) $(DIST_DIR)
+	@./scripts/linux/package-deb.sh $(or $(ARCH),amd64) $(VERSION) $(DIST_DIR)
 
 ## package-deb-all: Build Debian (.deb) packages for all architectures (amd64, arm64)
 package-deb-all:
-	@./scripts/package-deb.sh amd64 $(VERSION) $(DIST_DIR)
-	@./scripts/package-deb.sh arm64 $(VERSION) $(DIST_DIR)
+	@./scripts/linux/package-deb.sh amd64 $(VERSION) $(DIST_DIR)
+	@./scripts/linux/package-deb.sh arm64 $(VERSION) $(DIST_DIR)
 
 ## package-rpm: Build RPM package for current or specified ARCH (e.g. make package-rpm ARCH=x86_64)
 package-rpm:
-	@./scripts/package-rpm.sh $(or $(ARCH),x86_64) $(VERSION) $(DIST_DIR)
+	@./scripts/linux/package-rpm.sh $(or $(ARCH),x86_64) $(VERSION) $(DIST_DIR)
 
 ## package-rpm-all: Build RPM packages for all architectures (x86_64, aarch64)
 package-rpm-all:
-	@./scripts/package-rpm.sh x86_64 $(VERSION) $(DIST_DIR)
-	@./scripts/package-rpm.sh aarch64 $(VERSION) $(DIST_DIR)
+	@./scripts/linux/package-rpm.sh x86_64 $(VERSION) $(DIST_DIR)
+	@./scripts/linux/package-rpm.sh aarch64 $(VERSION) $(DIST_DIR)
 
 ## packages: Build all Debian (.deb) and RPM packages into dist/
 packages: package-deb-all package-rpm-all

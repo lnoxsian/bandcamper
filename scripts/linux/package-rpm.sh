@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # package-rpm.sh - Build RPM package for bandcamper
-# Usage: ./scripts/package-rpm.sh [ARCH] [VERSION] [OUTPUT_DIR]
-# Example: ./scripts/package-rpm.sh x86_64 1.0.0 dist
+# Usage: ./scripts/linux/package-rpm.sh [ARCH] [VERSION] [OUTPUT_DIR]
+# Example: ./scripts/linux/package-rpm.sh x86_64 1.0.0 dist
 # ==============================================================================
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 # Check for rpmbuild
 if ! command -v rpmbuild >/dev/null 2>&1; then

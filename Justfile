@@ -132,21 +132,21 @@ release: clean
 
 # Build Debian (.deb) package (e.g. just package-deb amd64)
 package-deb arch="amd64":
-    @./scripts/package-deb.sh {{arch}} {{version}} {{dist_dir}}
+    @./scripts/linux/package-deb.sh {{arch}} {{version}} {{dist_dir}}
 
 # Build Debian (.deb) packages for all architectures
 package-deb-all:
-    @./scripts/package-deb.sh amd64 {{version}} {{dist_dir}}
-    @./scripts/package-deb.sh arm64 {{version}} {{dist_dir}}
+    @./scripts/linux/package-deb.sh amd64 {{version}} {{dist_dir}}
+    @./scripts/linux/package-deb.sh arm64 {{version}} {{dist_dir}}
 
 # Build RPM package (e.g. just package-rpm x86_64)
 package-rpm arch="x86_64":
-    @./scripts/package-rpm.sh {{arch}} {{version}} {{dist_dir}}
+    @./scripts/linux/package-rpm.sh {{arch}} {{version}} {{dist_dir}}
 
 # Build RPM packages for all architectures
 package-rpm-all:
-    @./scripts/package-rpm.sh x86_64 {{version}} {{dist_dir}}
-    @./scripts/package-rpm.sh aarch64 {{version}} {{dist_dir}}
+    @./scripts/linux/package-rpm.sh x86_64 {{version}} {{dist_dir}}
+    @./scripts/linux/package-rpm.sh aarch64 {{version}} {{dist_dir}}
 
 # Build all Linux packages (.deb and .rpm) into dist/
 packages: package-deb-all package-rpm-all

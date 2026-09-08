@@ -57,8 +57,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BIN_SRC=""
 if [ -f "${SCRIPT_DIR}/bandcamper" ]; then
     BIN_SRC="${SCRIPT_DIR}/bandcamper"
+elif [ -f "${SCRIPT_DIR}/../../bin/bandcamper" ]; then
+    BIN_SRC="${SCRIPT_DIR}/../../bin/bandcamper"
 elif [ -f "${SCRIPT_DIR}/../bin/bandcamper" ]; then
     BIN_SRC="${SCRIPT_DIR}/../bin/bandcamper"
+elif [ -f "${SCRIPT_DIR}/../../bandcamper" ]; then
+    BIN_SRC="${SCRIPT_DIR}/../../bandcamper"
 elif [ -f "${SCRIPT_DIR}/../bandcamper" ]; then
     BIN_SRC="${SCRIPT_DIR}/../bandcamper"
 elif command -v bandcamper >/dev/null 2>&1; then
@@ -75,6 +79,8 @@ fi
 COMPLETION_DIR=""
 if [ -d "${SCRIPT_DIR}/completions" ]; then
     COMPLETION_DIR="${SCRIPT_DIR}/completions"
+elif [ -d "${SCRIPT_DIR}/../../assets/completions" ]; then
+    COMPLETION_DIR="${SCRIPT_DIR}/../../assets/completions"
 elif [ -d "${SCRIPT_DIR}/../assets/completions" ]; then
     COMPLETION_DIR="${SCRIPT_DIR}/../assets/completions"
 elif [ -d "${SCRIPT_DIR}/assets/completions" ]; then

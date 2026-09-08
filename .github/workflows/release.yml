@@ -145,8 +145,8 @@ jobs:
             [ -f LICENSE ] && cp LICENSE "${stage_dir}/"
 
             # Copy install script into package
-            if [ -f scripts/install.sh ]; then
-              cp scripts/install.sh "${stage_dir}/install.sh"
+            if [ -f scripts/linux/install.sh ]; then
+              cp scripts/linux/install.sh "${stage_dir}/install.sh"
               chmod +x "${stage_dir}/install.sh"
             fi
 
@@ -169,11 +169,11 @@ jobs:
 
           # Build Linux native packages (.deb and .rpm)
           echo "::group::Building Debian (.deb) and RPM (.rpm) packages"
-          chmod +x scripts/package-deb.sh scripts/package-rpm.sh
-          ./scripts/package-deb.sh amd64 "${APP_VERSION}" "${DIST_DIR}"
-          ./scripts/package-deb.sh arm64 "${APP_VERSION}" "${DIST_DIR}"
-          ./scripts/package-rpm.sh x86_64 "${APP_VERSION}" "${DIST_DIR}"
-          ./scripts/package-rpm.sh aarch64 "${APP_VERSION}" "${DIST_DIR}"
+          chmod +x scripts/linux/package-deb.sh scripts/linux/package-rpm.sh
+          ./scripts/linux/package-deb.sh amd64 "${APP_VERSION}" "${DIST_DIR}"
+          ./scripts/linux/package-deb.sh arm64 "${APP_VERSION}" "${DIST_DIR}"
+          ./scripts/linux/package-rpm.sh x86_64 "${APP_VERSION}" "${DIST_DIR}"
+          ./scripts/linux/package-rpm.sh aarch64 "${APP_VERSION}" "${DIST_DIR}"
           echo "::endgroup::"
 
           echo "::group::Generate Checksums"

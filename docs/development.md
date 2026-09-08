@@ -94,7 +94,7 @@ The recipes place development binaries in `bin/` and release binaries in `dist/`
 
 ### Linux package creation (.deb and .rpm)
 
-Debian (`.deb`) and Red Hat / Fedora (`.rpm`) packages can be created locally via `scripts/package-deb.sh` and `scripts/package-rpm.sh`, or using `make` / `just`:
+Debian (`.deb`) and Red Hat / Fedora (`.rpm`) packages can be created locally via `scripts/linux/package-deb.sh` and `scripts/linux/package-rpm.sh`, or using `make` / `just`:
 
 ```sh
 # Build Debian packages

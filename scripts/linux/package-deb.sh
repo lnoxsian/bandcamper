@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # package-deb.sh - Build Debian (.deb) package for bandcamper
-# Usage: ./scripts/package-deb.sh [ARCH] [VERSION] [OUTPUT_DIR]
-# Example: ./scripts/package-deb.sh amd64 1.0.0 dist
+# Usage: ./scripts/linux/package-deb.sh [ARCH] [VERSION] [OUTPUT_DIR]
+# Example: ./scripts/linux/package-deb.sh amd64 1.0.0 dist
 # ==============================================================================
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 # Target architecture (default: host or amd64)
 RAW_ARCH="${1:-}"
