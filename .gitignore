@@ -1,0 +1,13 @@
+# Binaries
+bandcamper
+bandcamper.exe
+*.exe
+*.test
+*.out
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Output
+downloads/
