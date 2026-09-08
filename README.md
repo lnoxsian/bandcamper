@@ -1,3 +1,12 @@
+
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/logo/logo_light.png">
+    <source media="(prefers-color-scheme: light)" srcset="./assets/logo/logo_dark.png">
+    <img alt="Bandcamper logo" src="./assets/logo/logo_dark.png" width="50%">
+  </picture>
+</div>
+
 # Bandcamper
 
 A fast, lightweight, cross-platform Bandcamp downloader written in Go, inspired by the feature set of [Otiel/BandcampDownloader](https://github.com/Otiel/BandcampDownloader).
