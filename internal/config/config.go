@@ -32,6 +32,7 @@ type Config struct {
 	DryRun   bool          `toml:"dry_run"`
 	Verbose  bool          `toml:"verbose"`
 	Quiet    bool          `toml:"quiet"`
+	Color    bool          `toml:"color"`
 
 	UserAgent string        `toml:"user_agent"`
 	Timeout   time.Duration `toml:"timeout"`
@@ -59,6 +60,7 @@ func DefaultConfig() *Config {
 		DryRun:   false,
 		Verbose:  false,
 		Quiet:    false,
+		Color:    true,
 
 		UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
 		Timeout:   30 * time.Second,

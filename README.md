@@ -96,6 +96,8 @@ bandcamper --file urls.txt
 | `--config <file>` | | *(OS default)* | Path to custom TOML config file |
 | `-v, --verbose` | | `false` | Enable verbose debug output |
 | `-q, --quiet` | | `false` | Suppress output except errors |
+| `--color` | | `true` | Enable ANSI colored output |
+| `--no-color` | | `false` | Disable ANSI colored output |
 | `--version` | | | Display version information |
 | `--help` | `-h` | | Show help message |
 

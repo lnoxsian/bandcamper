@@ -31,6 +31,80 @@ const (
 	ExitMetadataError    = 6
 )
 
+// ANSI color helpers
+const (
+	ansiReset     = "\033[0m"
+	ansiBold      = "\033[1m"
+	ansiDim       = "\033[2m"
+	ansiRed       = "\033[31m"
+	ansiGreen     = "\033[32m"
+	ansiYellow    = "\033[33m"
+	ansiCyan      = "\033[36m"
+	ansiBoldGreen = "\033[1;32m"
+	ansiBoldCyan  = "\033[1;36m"
+)
+
+// Colorizer formats text with ANSI escape sequences when enabled.
+type Colorizer struct {
+	Enabled bool
+}
+
+func (c Colorizer) Red(s string) string {
+	if !c.Enabled {
+		return s
+	}
+	return ansiRed + s + ansiReset
+}
+
+func (c Colorizer) Green(s string) string {
+	if !c.Enabled {
+		return s
+	}
+	return ansiGreen + s + ansiReset
+}
+
+func (c Colorizer) BoldGreen(s string) string {
+	if !c.Enabled {
+		return s
+	}
+	return ansiBoldGreen + s + ansiReset
+}
+
+func (c Colorizer) Yellow(s string) string {
+	if !c.Enabled {
+		return s
+	}
+	return ansiYellow + s + ansiReset
+}
+
+func (c Colorizer) Cyan(s string) string {
+	if !c.Enabled {
+		return s
+	}
+	return ansiCyan + s + ansiReset
+}
+
+func (c Colorizer) Bold(s string) string {
+	if !c.Enabled {
+		return s
+	}
+	return ansiBold + s + ansiReset
+}
+
+func (c Colorizer) BoldCyan(s string) string {
+	if !c.Enabled {
+		return s
+	}
+	return ansiBoldCyan + s + ansiReset
+}
+
+func (c Colorizer) Dim(s string) string {
+	if !c.Enabled {
+		return s
+	}
+	return ansiDim + s + ansiReset
+}
+
 func main() {
 	exitCode := run(os.Args[1:])
 	os.Exit(exitCode)
@@ -58,6 +132,8 @@ func run(args []string) int {
 		dryRun        bool
 		verbose       bool
 		quiet         bool
+		useColor      bool
+		noColor       bool
 		showVersion   bool
 		showHelp      bool
 	)
@@ -91,6 +167,9 @@ func run(args []string) int {
 	fs.BoolVar(&verbose, "v", false, "Enable verbose output (shorthand)")
 	fs.BoolVar(&quiet, "quiet", false, "Suppress normal output except errors")
 	fs.BoolVar(&quiet, "q", false, "Suppress output (shorthand)")
+
+	fs.BoolVar(&useColor, "color", true, "Enable ANSI colored terminal output")
+	fs.BoolVar(&noColor, "no-color", false, "Disable ANSI colored terminal output")
 
 	fs.BoolVar(&showVersion, "version", false, "Show version information and exit")
 	fs.BoolVar(&showHelp, "help", false, "Show help message and exit")
@@ -180,6 +259,12 @@ func run(args []string) int {
 		cfg.Quiet = true
 	}
 
+	// Resolve color setting (respecting NO_COLOR environment standard and flags)
+	if os.Getenv("NO_COLOR") != "" || noColor || !useColor {
+		cfg.Color = false
+	}
+	clr := Colorizer{Enabled: cfg.Color}
+
 	// Collect target URLs from positional arguments and --file
 	var targetURLs []string
 	if urlFile != "" {
@@ -207,7 +292,7 @@ func run(args []string) int {
 	go func() {
 		<-sigChan
 		if !cfg.Quiet {
-			fmt.Fprintf(os.Stderr, "\n[Interrupt] Cancelling active downloads...\n")
+			fmt.Fprintf(os.Stderr, "\n%s\n", clr.Red("[Interrupt] Cancelling active downloads..."))
 		}
 		cancel()
 	}()
@@ -215,7 +300,6 @@ func run(args []string) int {
 	client := bandcamp.NewClient(cfg.Timeout, cfg.UserAgent)
 
 	var lastLineMu sync.Mutex
-	var lastPrintedTrack string
 
 	progressFn := func(p downloader.TrackProgress) {
 		if cfg.Quiet {
@@ -227,19 +311,26 @@ func run(args []string) int {
 
 		switch p.Status {
 		case downloader.StatusCompleted:
-			fmt.Printf("  [%d/%d] %-30s [Done]\n", p.TrackNumber, p.TrackTotal, truncateString(p.Title, 30))
+			doneText := clr.BoldGreen("100% DONE")
+			fmt.Printf("\r  [%d/%d] %-30s %s                  \n",
+				p.TrackNumber, p.TrackTotal, truncateString(p.Title, 30), doneText)
 		case downloader.StatusSkipped:
-			fmt.Printf("  [%d/%d] %-30s [Skipped - already exists]\n", p.TrackNumber, p.TrackTotal, truncateString(p.Title, 30))
+			skippedText := clr.Yellow("[Skipped - already exists]")
+			fmt.Printf("\r  [%d/%d] %-30s %s                  \n",
+				p.TrackNumber, p.TrackTotal, truncateString(p.Title, 30), skippedText)
 		case downloader.StatusFailed:
-			fmt.Printf("  [%d/%d] %-30s [Failed: %v]\n", p.TrackNumber, p.TrackTotal, truncateString(p.Title, 30), p.Error)
+			failedText := clr.Red(fmt.Sprintf("[Failed: %v]", p.Error))
+			fmt.Printf("\r  [%d/%d] %-30s %s                  \n",
+				p.TrackNumber, p.TrackTotal, truncateString(p.Title, 30), failedText)
 		case downloader.StatusDownloading:
-			trackKey := fmt.Sprintf("%d-%s", p.TrackNumber, p.Title)
-			if trackKey != lastPrintedTrack {
-				lastPrintedTrack = trackKey
-				if cfg.Verbose {
-					fmt.Printf("  [%d/%d] Downloading %q...\n", p.TrackNumber, p.TrackTotal, p.Title)
-				}
+			pct := p.Percent
+			if pct < 0 {
+				pct = 0
 			}
+			speedStr := downloader.FormatSpeed(p.SpeedBytesPerSec)
+			pctText := clr.BoldCyan(fmt.Sprintf("%3.0f%%", pct))
+			fmt.Printf("\r  [%d/%d] %-30s %s (%s)      ",
+				p.TrackNumber, p.TrackTotal, truncateString(p.Title, 30), pctText, speedStr)
 		}
 	}
 
@@ -259,13 +350,13 @@ func run(args []string) int {
 
 		resolved, err := bandcamp.ResolveURL(rawURL)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Invalid Bandcamp URL %q: %v\n", rawURL, err)
+			fmt.Fprintf(os.Stderr, "%s %q: %v\n", clr.Red("Invalid Bandcamp URL"), rawURL, err)
 			hasInvalidURL = true
 			continue
 		}
 
 		if !cfg.Quiet {
-			fmt.Printf("\nResolving %s (%s)...\n", resolved.NormalizedURL, resolved.Type)
+			fmt.Printf("\n%s %s (%s)...\n", clr.Cyan("Resolving"), clr.Bold(resolved.NormalizedURL), resolved.Type)
 		}
 
 		results, err := dl.DownloadURL(ctx, resolved.NormalizedURL)
@@ -275,26 +366,28 @@ func run(args []string) int {
 			} else {
 				hasDownloadError = true
 			}
-			fmt.Fprintf(os.Stderr, "Failed processing %s: %v\n", resolved.NormalizedURL, err)
+			fmt.Fprintf(os.Stderr, "%s %s: %v\n", clr.Red("Failed processing"), resolved.NormalizedURL, err)
 			continue
 		}
 
 		for _, res := range results {
 			if cfg.DryRun {
-				printDryRun(res, cfg)
+				printDryRun(res, cfg, clr)
 				continue
 			}
 
 			if !cfg.Quiet {
-				fmt.Printf("\nFinished: %s - %s\n", res.Release.Artist, res.Release.Album)
+				fmt.Printf("\n%s %s - %s\n", clr.Bold("Finished:"), clr.Cyan(res.Release.Artist), clr.Cyan(res.Release.Album))
 				fmt.Printf("Output directory: %s\n", res.OutputDir)
-				fmt.Printf("Downloaded: %d, Skipped: %d, Failed: %d\n",
-					len(res.DownloadedTracks), len(res.SkippedTracks), len(res.FailedTracks))
+				fmt.Printf("Downloaded: %s, Skipped: %s, Failed: %s\n",
+					clr.BoldGreen(fmt.Sprintf("%d", len(res.DownloadedTracks))),
+					clr.Yellow(fmt.Sprintf("%d", len(res.SkippedTracks))),
+					clr.Red(fmt.Sprintf("%d", len(res.FailedTracks))))
 				if res.CoverPath != "" {
-					fmt.Printf("Cover artwork saved: %s\n", res.CoverPath)
+					fmt.Printf("%s %s\n", clr.Dim("Cover artwork saved:"), res.CoverPath)
 				}
 				if res.PlaylistPath != "" {
-					fmt.Printf("Playlist generated: %s\n", res.PlaylistPath)
+					fmt.Printf("%s %s\n", clr.Dim("Playlist generated:"), res.PlaylistPath)
 				}
 			}
 
@@ -317,13 +410,13 @@ func run(args []string) int {
 	return ExitSuccess
 }
 
-func printDryRun(res *downloader.DownloadResult, cfg *config.Config) {
+func printDryRun(res *downloader.DownloadResult, cfg *config.Config, clr Colorizer) {
 	rel := res.Release
-	fmt.Printf("\n[DRY RUN]\n")
-	fmt.Printf("Artist:  %s\n", rel.Artist)
-	fmt.Printf("Album:   %s\n", rel.Album)
-	fmt.Printf("Tracks:  %d\n", len(rel.Tracks))
-	fmt.Printf("Output:  %s\n\n", res.OutputDir)
+	fmt.Printf("\n%s\n", clr.Yellow("[DRY RUN]"))
+	fmt.Printf("%s  %s\n", clr.Bold("Artist:"), rel.Artist)
+	fmt.Printf("%s  %s\n", clr.Bold("Album:"), rel.Album)
+	fmt.Printf("%s  %d\n", clr.Bold("Tracks:"), len(rel.Tracks))
+	fmt.Printf("%s  %s\n\n", clr.Bold("Output:"), res.OutputDir)
 
 	year := 0
 	if !rel.ReleaseDate.IsZero() {
