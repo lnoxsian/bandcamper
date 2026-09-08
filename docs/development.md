@@ -92,6 +92,32 @@ just release
 
 The recipes place development binaries in `bin/` and release binaries in `dist/`.
 
+## Version management
+
+The project version is tracked in the root [`VERSION`](../VERSION) file and injected during compilation via `-ldflags`.
+
+View the current version:
+
+```sh
+make version
+just version
+```
+
+Set a specific version:
+
+```sh
+make set-version V=1.0.1
+just set-version 1.0.1
+```
+
+Bump semver components automatically:
+
+```sh
+make bump-patch     # or: just bump-patch (e.g. 1.0.0 -> 1.0.1)
+make bump-minor     # or: just bump-minor (e.g. 1.0.0 -> 1.1.0)
+make bump-major     # or: just bump-major (e.g. 1.0.0 -> 2.0.0)
+```
+
 ## Testing strategy
 
 Tests are organized around package responsibilities:

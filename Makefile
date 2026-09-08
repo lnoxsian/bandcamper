@@ -4,7 +4,8 @@ BINARY_NAME := bandcamper
 CMD_DIR := ./cmd/bandcamper
 BIN_DIR := ./bin
 DIST_DIR := ./dist
-VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "1.0.0")
+VERSION_FILE := VERSION
+VERSION ?= $(shell cat $(VERSION_FILE) 2>/dev/null || git describe --tags --always --dirty 2>/dev/null || echo "1.0.0")
 LDFLAGS := -ldflags="-s -w -X main.Version=$(VERSION)"
 BUILD_FLAGS := -trimpath $(LDFLAGS)
 CGO_ENABLED ?= 0
@@ -15,6 +16,7 @@ GO ?= go
         build-linux build-linux-amd64 build-linux-arm64 \
         build-darwin build-darwin-amd64 build-darwin-arm64 \
         build-windows build-windows-amd64 build-windows-arm64 \
+        version set-version bump-patch bump-minor bump-major \
         install run test test-race test-cover vet fmt clean release help
 
 all: build
@@ -130,6 +132,35 @@ release: clean
 	GOOS=windows GOARCH=amd64 $(GO) build $(BUILD_FLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-windows-amd64.exe $(CMD_DIR)
 	GOOS=windows GOARCH=arm64 $(GO) build $(BUILD_FLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-windows-arm64.exe $(CMD_DIR)
 	@echo "Cross-platform release binaries compiled into $(DIST_DIR)/"
+
+## version: Display the current version from the VERSION file
+version:
+	@cat $(VERSION_FILE)
+
+## set-version: Update the VERSION file (e.g. make set-version V=1.0.1)
+set-version:
+	@NEW_VER="$(or $(V),$(VERSION))"; \
+	if [ -z "$$NEW_VER" ] || [ "$$NEW_VER" = "$$(cat $(VERSION_FILE) 2>/dev/null)" ]; then \
+		echo "Error: please specify a new version, e.g. make set-version V=1.0.1"; \
+		exit 1; \
+	fi; \
+	echo "$$NEW_VER" > $(VERSION_FILE); \
+	echo "Updated $(VERSION_FILE) to $$NEW_VER"
+
+## bump-patch: Bump the patch version in VERSION file (e.g. 1.0.0 -> 1.0.1)
+bump-patch:
+	@awk -F. '{$$NF = $$NF + 1;} 1' OFS=. $(VERSION_FILE) > $(VERSION_FILE).tmp && mv $(VERSION_FILE).tmp $(VERSION_FILE)
+	@echo "Bumped patch version to $$(cat $(VERSION_FILE))"
+
+## bump-minor: Bump the minor version in VERSION file (e.g. 1.0.0 -> 1.1.0)
+bump-minor:
+	@awk -F. '{$$2 = $$2 + 1; $$3 = 0;} 1' OFS=. $(VERSION_FILE) > $(VERSION_FILE).tmp && mv $(VERSION_FILE).tmp $(VERSION_FILE)
+	@echo "Bumped minor version to $$(cat $(VERSION_FILE))"
+
+## bump-major: Bump the major version in VERSION file (e.g. 1.0.0 -> 2.0.0)
+bump-major:
+	@awk -F. '{$$1 = $$1 + 1; $$2 = 0; $$3 = 0;} 1' OFS=. $(VERSION_FILE) > $(VERSION_FILE).tmp && mv $(VERSION_FILE).tmp $(VERSION_FILE)
+	@echo "Bumped major version to $$(cat $(VERSION_FILE))"
 
 ## help: Show this help message
 help:

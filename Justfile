@@ -7,7 +7,7 @@ binary_name := "bandcamper"
 cmd_dir := "./cmd/bandcamper"
 bin_dir := "./bin"
 dist_dir := "./dist"
-version := `git describe --tags --always --dirty 2>/dev/null || echo "1.0.0"`
+version := `cat VERSION 2>/dev/null || git describe --tags --always --dirty 2>/dev/null || echo "1.0.0"`
 ldflags := "-s -w -X main.Version=" + version
 
 # List available recipes
@@ -121,3 +121,27 @@ release: clean
     GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="{{ldflags}}" -o {{dist_dir}}/{{binary_name}}-windows-amd64.exe {{cmd_dir}}
     GOOS=windows GOARCH=arm64 go build -trimpath -ldflags="{{ldflags}}" -o {{dist_dir}}/{{binary_name}}-windows-arm64.exe {{cmd_dir}}
     @echo "Cross-platform release binaries compiled into {{dist_dir}}/"
+
+# Display the current version from the VERSION file
+version:
+    @cat VERSION
+
+# Update the version in the VERSION file (e.g. just set-version 1.0.1)
+set-version new_version:
+    @echo "{{new_version}}" > VERSION
+    @echo "Updated VERSION to {{new_version}}"
+
+# Bump the patch version in the VERSION file (e.g. 1.0.0 -> 1.0.1)
+bump-patch:
+    @awk -F. '{$$NF = $$NF + 1;} 1' OFS=. VERSION > VERSION.tmp && mv VERSION.tmp VERSION
+    @echo "Bumped patch version to `cat VERSION`"
+
+# Bump the minor version in the VERSION file (e.g. 1.0.0 -> 1.1.0)
+bump-minor:
+    @awk -F. '{$$2 = $$2 + 1; $$3 = 0;} 1' OFS=. VERSION > VERSION.tmp && mv VERSION.tmp VERSION
+    @echo "Bumped minor version to `cat VERSION`"
+
+# Bump the major version in the VERSION file (e.g. 1.0.0 -> 2.0.0)
+bump-major:
+    @awk -F. '{$$1 = $$1 + 1; $$2 = 0; $$3 = 0;} 1' OFS=. VERSION > VERSION.tmp && mv VERSION.tmp VERSION
+    @echo "Bumped major version to `cat VERSION`"
