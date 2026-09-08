@@ -142,6 +142,12 @@ jobs:
             [ -f README.md ] && cp README.md "${stage_dir}/"
             [ -f LICENSE ] && cp LICENSE "${stage_dir}/"
 
+            # Copy shell completions into package
+            if [ -d assets/completions ]; then
+              mkdir -p "${stage_dir}/completions"
+              cp assets/completions/* "${stage_dir}/completions/"
+            fi
+
             # Create archive (.zip for windows, .tar.gz for unix)
             if [ "${os}" = "windows" ]; then
               (cd "${stage_dir}" && zip -q -r "../${DIST_DIR}/${target_name}.zip" .)

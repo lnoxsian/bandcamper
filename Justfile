@@ -80,6 +80,14 @@ install:
     go install -trimpath -ldflags="{{ldflags}}" {{cmd_dir}}
     @echo "Installed {{binary_name}}"
 
+# Install shell completions (bash, zsh, fish) for user
+install-completions:
+    @mkdir -p ~/.local/share/bash-completion/completions ~/.config/fish/completions ~/.zfunc
+    @cp assets/completions/bandcamper.bash ~/.local/share/bash-completion/completions/bandcamper
+    @cp assets/completions/bandcamper.fish ~/.config/fish/completions/bandcamper.fish
+    @cp assets/completions/_bandcamper ~/.zfunc/_bandcamper
+    @echo "Installed shell completions into ~/.local/share/bash-completion/completions, ~/.config/fish/completions, and ~/.zfunc"
+
 # Run the application with custom arguments (e.g. just run --help)
 run *args:
     go run {{cmd_dir}} {{args}}

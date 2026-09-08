@@ -25,6 +25,29 @@ go install github.com/lnoxsian/bandcamper/cmd/bandcamper@latest
 
 Make sure the Go install directory is on your `PATH`.
 
+### Shell Completions
+
+Pre-generated completion scripts for Bash, Zsh, and Fish are provided in [`assets/completions/`](../assets/completions):
+
+- **Bash**:
+  ```sh
+  # Temporary / test
+  source assets/completions/bandcamper.bash
+  # Permanent
+  sudo cp assets/completions/bandcamper.bash /etc/bash_completion.d/bandcamper
+  ```
+- **Zsh**:
+  ```sh
+  # Copy to a site-functions or fpath directory:
+  cp assets/completions/_bandcamper ~/.zfunc/   # ensure ~/.zfunc is in fpath in .zshrc
+  # Or source directly in ~/.zshrc:
+  source /path/to/assets/completions/bandcamper.zsh
+  ```
+- **Fish**:
+  ```sh
+  cp assets/completions/bandcamper.fish ~/.config/fish/completions/
+  ```
+
 ## Supported inputs
 
 Bandcamper accepts one or more positional URLs:

@@ -1,0 +1,34 @@
+#compdef bandcamper
+
+# zsh completion for bandcamper
+
+_bandcamper() {
+    local curcontext="$curcontext" state line
+    typeset -A opt_args
+
+    _arguments -s -S \
+        '--config[Path to configuration file]:config file:_files -g "*.toml(-.)"' \
+        '(-f --file)'{-f,--file}'[File containing Bandcamp URLs (one per line)]:urls file:_files' \
+        '(-o --output)'{-o,--output}'[Output directory for downloads]:output directory:_files -/' \
+        '(-j --jobs)'{-j,--jobs}'[Number of concurrent download workers]:jobs count:(1 2 4 8 16)' \
+        '--retry[Number of retries for failed downloads]:retry count:(0 1 2 3 5)' \
+        '--filename[Filename format template]:template:("{tracknumber} - {title}.mp3" "{artist} - {title}.mp3")' \
+        '--directory[Directory format template]:template:("{artist}/{album}" "{artist}" "{album}")' \
+        '--playlist[Playlist format to generate]:playlist format:(m3u pls wpl zpl)' \
+        '--skip-existing[Skip downloading existing files]' \
+        '--overwrite[Overwrite existing files]' \
+        '--no-tags[Disable ID3 metadata embedding]' \
+        '--no-artwork[Disable embedding artwork into audio files]' \
+        '--no-lyrics[Disable embedding lyrics into audio files]' \
+        '--no-save-artwork[Do not save cover artwork file alongside music]' \
+        '--dry-run[Simulate operations without downloading any files]' \
+        '(-v --verbose)'{-v,--verbose}'[Enable verbose debug output]' \
+        '(-q --quiet)'{-q,--quiet}'[Suppress normal output except errors]' \
+        '--color[Enable ANSI colored terminal output]' \
+        '--no-color[Disable ANSI colored terminal output]' \
+        '--version[Show version information and exit]' \
+        '(-h --help)'{-h,--help}'[Show help message and exit]' \
+        '*:Bandcamp URL: '
+}
+
+_bandcamper "$@"

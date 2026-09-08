@@ -17,7 +17,7 @@ GO ?= go
         build-darwin build-darwin-amd64 build-darwin-arm64 \
         build-windows build-windows-amd64 build-windows-arm64 \
         version set-version bump-patch bump-minor bump-major \
-        install run test test-race test-cover vet fmt clean release help
+        install install-completions run test test-race test-cover vet fmt clean release help
 
 all: build
 
@@ -90,6 +90,14 @@ build-all: build-linux-amd64 build-linux-arm64 build-darwin-amd64 build-darwin-a
 install:
 	$(GO) install $(LDFLAGS) $(CMD_DIR)
 	@echo "Installed $(BINARY_NAME)"
+
+## install-completions: Install shell completions (bash, zsh, fish) for user
+install-completions:
+	@mkdir -p ~/.local/share/bash-completion/completions ~/.config/fish/completions ~/.zfunc
+	@cp assets/completions/bandcamper.bash ~/.local/share/bash-completion/completions/bandcamper
+	@cp assets/completions/bandcamper.fish ~/.config/fish/completions/bandcamper.fish
+	@cp assets/completions/_bandcamper ~/.zfunc/_bandcamper
+	@echo "Installed shell completions into ~/.local/share/bash-completion/completions, ~/.config/fish/completions, and ~/.zfunc"
 
 ## run: Run the application with custom arguments (e.g. make run ARGS="--help")
 run:
