@@ -108,11 +108,17 @@ func processTrackJob(
 
 	report := func(status ProgressStatus, downloaded, total int64, speed, pct float64, err error) {
 		if onProgress != nil {
+			albumName := ""
+			if rel != nil {
+				albumName = rel.Album
+			}
 			onProgress(TrackProgress{
+				TrackIndex:       job.TrackIndex,
 				TrackNumber:      tr.Number,
 				TrackTotal:       job.TrackTotal,
 				Title:            tr.Title,
 				Artist:           tr.Artist,
+				Album:            albumName,
 				Status:           status,
 				BytesDownloaded:  downloaded,
 				TotalBytes:       total,

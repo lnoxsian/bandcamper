@@ -86,3 +86,9 @@ func isColorSupported(info Info) bool {
 func IsTerminal(f *os.File) bool {
 	return isTerminal(f)
 }
+
+// GetSize returns the terminal dimensions (width, height in characters).
+func GetSize() (width, height int) {
+	return getTerminalSize()
+}
+

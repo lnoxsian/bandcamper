@@ -1,9 +1,9 @@
 # Compiled binaries and build output
 bin/
 dist/
-bandcamper
-bandcamper.exe
-bandcamper-*
+/bandcamper
+/bandcamper.exe
+/bandcamper-*
 *.exe
 *.exe~
 *.dll

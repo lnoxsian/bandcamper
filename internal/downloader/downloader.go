@@ -34,10 +34,12 @@ type DownloadResult struct {
 
 // Downloader orchestrates downloading of Bandcamp releases, artwork, and playlist generation.
 type Downloader struct {
-	Config       *config.Config
-	Client       *bandcamp.Client
-	ArtworkCache *metadata.ArtworkCache
-	Progress     ProgressFunc
+	Config         *config.Config
+	Client         *bandcamp.Client
+	ArtworkCache   *metadata.ArtworkCache
+	Progress       ProgressFunc
+	OnReleaseStart func(rel *bandcamp.Release)
+	OnReleaseDone  func(res *DownloadResult)
 }
 
 // New creates a new Downloader instance.
@@ -154,6 +156,10 @@ func (d *Downloader) DownloadRelease(ctx context.Context, rel *bandcamp.Release)
 		return nil, fmt.Errorf("%w: release has no tracks", bandcamp.ErrParseFailed)
 	}
 
+	if d.OnReleaseStart != nil {
+		d.OnReleaseStart(rel)
+	}
+
 	year := 0
 	if !rel.ReleaseDate.IsZero() {
 		year = rel.ReleaseDate.Year()
@@ -250,6 +256,10 @@ func (d *Downloader) DownloadRelease(ctx context.Context, rel *bandcamp.Release)
 				result.PlaylistPath = playlistPath
 			}
 		}
+	}
+
+	if d.OnReleaseDone != nil {
+		d.OnReleaseDone(result)
 	}
 
 	return result, nil

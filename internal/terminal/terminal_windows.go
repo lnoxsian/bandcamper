@@ -5,6 +5,7 @@ package terminal
 import (
 	"os"
 	"syscall"
+	"unsafe"
 )
 
 const (
@@ -80,4 +81,43 @@ func isTerminal(f *os.File) bool {
 	var mode uint32
 	err := syscall.GetConsoleMode(syscall.Handle(f.Fd()), &mode)
 	return err == nil
+}
+
+type coord struct {
+	X int16
+	Y int16
+}
+
+type smallRect struct {
+	Left   int16
+	Top    int16
+	Right  int16
+	Bottom int16
+}
+
+type consoleScreenBufferInfo struct {
+	Size       coord
+	CursorPos  coord
+	Attrs      uint16
+	Window     smallRect
+	MaxWinSize coord
+}
+
+var procGetConsoleScreenBufferInfo = kernel32.NewProc("GetConsoleScreenBufferInfo")
+
+func getTerminalSize() (int, int) {
+	var info consoleScreenBufferInfo
+	h, err := syscall.GetStdHandle(syscall.STD_OUTPUT_HANDLE)
+	if err != nil || h == syscall.InvalidHandle {
+		return 80, 24
+	}
+	r1, _, _ := procGetConsoleScreenBufferInfo.Call(uintptr(h), uintptr(unsafe.Pointer(&info)))
+	if r1 != 0 {
+		w := int(info.Window.Right - info.Window.Left + 1)
+		h := int(info.Window.Bottom - info.Window.Top + 1)
+		if w > 0 && h > 0 {
+			return w, h
+		}
+	}
+	return 80, 24
 }

@@ -39,10 +39,12 @@ func (s ProgressStatus) String() string {
 
 // TrackProgress conveys download progress and status for an individual track.
 type TrackProgress struct {
+	TrackIndex       int
 	TrackNumber      int
 	TrackTotal       int
 	Title            string
 	Artist           string
+	Album            string
 	Status           ProgressStatus
 	BytesDownloaded  int64
 	TotalBytes       int64

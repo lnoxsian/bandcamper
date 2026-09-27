@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-	"sync"
 	"syscall"
 
 	"github.com/lnoxsian/bandcamper/internal/bandcamp"
@@ -327,42 +326,11 @@ func run(args []string) int {
 
 	client := bandcamp.NewClient(cfg.Timeout, cfg.UserAgent)
 
-	var lastLineMu sync.Mutex
+	ui := NewProgressUI(cfg, termInfo, clr)
 
-	progressFn := func(p downloader.TrackProgress) {
-		if cfg.Quiet {
-			return
-		}
-
-		lastLineMu.Lock()
-		defer lastLineMu.Unlock()
-
-		switch p.Status {
-		case downloader.StatusCompleted:
-			doneText := clr.BoldGreen("100% DONE")
-			fmt.Printf("\r  [%d/%d] %-30s %s                  \n",
-				p.TrackNumber, p.TrackTotal, truncateString(p.Title, 30), doneText)
-		case downloader.StatusSkipped:
-			skippedText := clr.Yellow("[Skipped - already exists]")
-			fmt.Printf("\r  [%d/%d] %-30s %s                  \n",
-				p.TrackNumber, p.TrackTotal, truncateString(p.Title, 30), skippedText)
-		case downloader.StatusFailed:
-			failedText := clr.Red(fmt.Sprintf("[Failed: %v]", p.Error))
-			fmt.Printf("\r  [%d/%d] %-30s %s                  \n",
-				p.TrackNumber, p.TrackTotal, truncateString(p.Title, 30), failedText)
-		case downloader.StatusDownloading:
-			pct := p.Percent
-			if pct < 0 {
-				pct = 0
-			}
-			speedStr := downloader.FormatSpeed(p.SpeedBytesPerSec)
-			pctText := clr.BoldCyan(fmt.Sprintf("%3.0f%%", pct))
-			fmt.Printf("\r  [%d/%d] %-30s %s (%s)      ",
-				p.TrackNumber, p.TrackTotal, truncateString(p.Title, 30), pctText, speedStr)
-		}
-	}
-
-	dl := downloader.New(cfg, client, progressFn)
+	dl := downloader.New(cfg, client, ui.OnTrackProgress)
+	dl.OnReleaseStart = ui.OnReleaseStart
+	dl.OnReleaseDone = ui.OnReleaseDone
 
 	var (
 		hasDownloadError bool
@@ -402,21 +370,6 @@ func run(args []string) int {
 			if cfg.DryRun {
 				printDryRun(res, cfg, clr)
 				continue
-			}
-
-			if !cfg.Quiet {
-				fmt.Printf("\n%s %s - %s\n", clr.Bold("Finished:"), clr.Cyan(res.Release.Artist), clr.Cyan(res.Release.Album))
-				fmt.Printf("Output directory: %s\n", res.OutputDir)
-				fmt.Printf("Downloaded: %s, Skipped: %s, Failed: %s\n",
-					clr.BoldGreen(fmt.Sprintf("%d", len(res.DownloadedTracks))),
-					clr.Yellow(fmt.Sprintf("%d", len(res.SkippedTracks))),
-					clr.Red(fmt.Sprintf("%d", len(res.FailedTracks))))
-				if res.CoverPath != "" {
-					fmt.Printf("%s %s\n", clr.Dim("Cover artwork saved:"), res.CoverPath)
-				}
-				if res.PlaylistPath != "" {
-					fmt.Printf("%s %s\n", clr.Dim("Playlist generated:"), res.PlaylistPath)
-				}
 			}
 
 			if len(res.FailedTracks) > 0 {
