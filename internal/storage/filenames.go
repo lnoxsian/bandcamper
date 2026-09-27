@@ -9,6 +9,7 @@ import (
 
 // TemplateData holds values available for path and filename templates.
 type TemplateData struct {
+	Provider    string
 	Artist      string
 	Album       string
 	AlbumArtist string
@@ -116,6 +117,7 @@ func RenderFilename(tmpl string, data TemplateData) string {
 	}
 
 	r := strings.NewReplacer(
+		"{provider}", sanitizeComponent(data.Provider),
 		"{artist}", sanitizeComponent(data.Artist),
 		"{album}", sanitizeComponent(data.Album),
 		"{albumartist}", sanitizeComponent(albumArtist),

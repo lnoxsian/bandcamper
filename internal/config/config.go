@@ -36,6 +36,22 @@ type Config struct {
 
 	UserAgent string        `toml:"user_agent"`
 	Timeout   time.Duration `toml:"timeout"`
+
+	Providers  ProviderConfig   `toml:"providers"`
+	Soundcloud SoundcloudConfig `toml:"soundcloud"`
+}
+
+// ProviderConfig configures which platforms are enabled.
+type ProviderConfig struct {
+	Bandcamp   bool `toml:"bandcamp"`
+	Soundcloud bool `toml:"soundcloud"`
+}
+
+// SoundcloudConfig contains options specific to the SoundCloud provider.
+type SoundcloudConfig struct {
+	PreferredFormat string `toml:"preferred_format"`
+	SaveArtwork     bool   `toml:"save_artwork"`
+	EmbedArtwork    bool   `toml:"embed_artwork"`
 }
 
 // DefaultConfig returns a new Config populated with sensible default values.
@@ -64,6 +80,16 @@ func DefaultConfig() *Config {
 
 		UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
 		Timeout:   30 * time.Second,
+
+		Providers: ProviderConfig{
+			Bandcamp:   true,
+			Soundcloud: true,
+		},
+		Soundcloud: SoundcloudConfig{
+			PreferredFormat: "best",
+			SaveArtwork:     true,
+			EmbedArtwork:    true,
+		},
 	}
 }
 

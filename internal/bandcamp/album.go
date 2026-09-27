@@ -13,7 +13,8 @@ func ParseAlbum(htmlContent, pageURL string) (*Release, error) {
 	schema, _ := ExtractLDJson(htmlContent)
 
 	release := &Release{
-		URL: pageURL,
+		Provider: "bandcamp",
+		URL:      pageURL,
 	}
 
 	if tralbum != nil {

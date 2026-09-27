@@ -3,6 +3,7 @@ package downloader
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -11,6 +12,8 @@ import (
 	"github.com/lnoxsian/bandcamper/internal/config"
 	"github.com/lnoxsian/bandcamper/internal/metadata"
 	"github.com/lnoxsian/bandcamper/internal/playlist"
+	"github.com/lnoxsian/bandcamper/internal/provider"
+	"github.com/lnoxsian/bandcamper/internal/soundcloud"
 	"github.com/lnoxsian/bandcamper/internal/storage"
 )
 
@@ -32,17 +35,18 @@ type DownloadResult struct {
 	PlaylistPath     string
 }
 
-// Downloader orchestrates downloading of Bandcamp releases, artwork, and playlist generation.
+// Downloader orchestrates downloading of music releases, artwork, and playlist generation across providers.
 type Downloader struct {
 	Config         *config.Config
 	Client         *bandcamp.Client
+	Registry       *provider.Registry
 	ArtworkCache   *metadata.ArtworkCache
 	Progress       ProgressFunc
 	OnReleaseStart func(rel *bandcamp.Release)
 	OnReleaseDone  func(res *DownloadResult)
 }
 
-// New creates a new Downloader instance.
+// New creates a new Downloader instance and initializes supported providers.
 func New(cfg *config.Config, client *bandcamp.Client, progress ProgressFunc) *Downloader {
 	if cfg == nil {
 		cfg = config.DefaultConfig()
@@ -51,39 +55,92 @@ func New(cfg *config.Config, client *bandcamp.Client, progress ProgressFunc) *Do
 		client = bandcamp.NewClient(cfg.Timeout, cfg.UserAgent)
 	}
 
+	reg := provider.NewRegistry()
+	if cfg.Providers.Bandcamp {
+		reg.Register(bandcamp.NewProvider(client))
+	}
+	if cfg.Providers.Soundcloud {
+		scClient := soundcloud.NewClient(cfg.Timeout, cfg.UserAgent)
+		reg.Register(soundcloud.NewProvider(scClient))
+	}
+
 	return &Downloader{
 		Config:       cfg,
 		Client:       client,
+		Registry:     reg,
 		ArtworkCache: metadata.NewArtworkCache(),
 		Progress:     progress,
 	}
 }
 
-// DownloadURL resolves any Bandcamp URL (artist, album, or track) and downloads all associated releases.
+// NewWithRegistry creates a Downloader with an explicit custom Registry.
+func NewWithRegistry(cfg *config.Config, reg *provider.Registry, client *bandcamp.Client, progress ProgressFunc) *Downloader {
+	if cfg == nil {
+		cfg = config.DefaultConfig()
+	}
+	if client == nil {
+		client = bandcamp.NewClient(cfg.Timeout, cfg.UserAgent)
+	}
+	if reg == nil {
+		reg = provider.NewRegistry()
+	}
+	return &Downloader{
+		Config:       cfg,
+		Client:       client,
+		Registry:     reg,
+		ArtworkCache: metadata.NewArtworkCache(),
+		Progress:     progress,
+	}
+}
+
+// DownloadURL resolves any supported URL (Bandcamp, SoundCloud, etc.) and downloads all associated releases.
 func (d *Downloader) DownloadURL(ctx context.Context, rawURL string) ([]*DownloadResult, error) {
-	resolved, err := bandcamp.ResolveURL(rawURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve URL %q: %w", rawURL, err)
+	return d.DownloadURLWithProvider(ctx, rawURL, "")
+}
+
+// DownloadURLWithProvider downloads a URL using an explicit provider or auto-detecting if providerName is empty.
+func (d *Downloader) DownloadURLWithProvider(ctx context.Context, rawURL string, providerName string) ([]*DownloadResult, error) {
+	rawURL = strings.TrimSpace(rawURL)
+	if rawURL == "" {
+		return nil, fmt.Errorf("%w: empty URL", bandcamp.ErrInvalidURL)
 	}
 
-	switch resolved.Type {
-	case bandcamp.PageArtist:
-		return d.downloadArtist(ctx, resolved.NormalizedURL)
-	case bandcamp.PageAlbum:
-		res, err := d.downloadAlbum(ctx, resolved.NormalizedURL)
-		if err != nil {
-			return nil, err
-		}
-		return []*DownloadResult{res}, nil
-	case bandcamp.PageTrack:
-		res, err := d.downloadTrack(ctx, resolved.NormalizedURL)
-		if err != nil {
-			return nil, err
-		}
-		return []*DownloadResult{res}, nil
-	default:
-		return nil, fmt.Errorf("%w: unrecognized page type for %s", bandcamp.ErrUnsupportedPage, rawURL)
+	targetURL := rawURL
+	if !strings.HasPrefix(targetURL, "http://") && !strings.HasPrefix(targetURL, "https://") {
+		targetURL = "https://" + targetURL
 	}
+
+	parsed, err := url.Parse(targetURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid URL %q: %w", rawURL, err)
+	}
+
+	prov, err := d.Registry.ResolveProvider(parsed, providerName)
+	if err != nil {
+		return nil, err
+	}
+
+	releases, err := prov.Resolve(ctx, parsed)
+	if err != nil {
+		return nil, err
+	}
+
+	var results []*DownloadResult
+	for _, rel := range releases {
+		select {
+		case <-ctx.Done():
+			return results, ctx.Err()
+		default:
+		}
+
+		res, err := d.DownloadRelease(ctx, rel)
+		if err != nil {
+			return results, err
+		}
+		results = append(results, res)
+	}
+
+	return results, nil
 }
 
 func (d *Downloader) downloadArtist(ctx context.Context, artistURL string) ([]*DownloadResult, error) {
@@ -166,6 +223,7 @@ func (d *Downloader) DownloadRelease(ctx context.Context, rel *bandcamp.Release)
 	}
 
 	tmplData := storage.TemplateData{
+		Provider:    rel.Provider,
 		Artist:      rel.Artist,
 		Album:       rel.Album,
 		AlbumArtist: rel.AlbumArtist,
@@ -195,6 +253,7 @@ func (d *Downloader) DownloadRelease(ctx context.Context, rel *bandcamp.Release)
 
 	for idx, tr := range rel.Tracks {
 		trackTmplData := storage.TemplateData{
+			Provider:    rel.Provider,
 			Artist:      tr.Artist,
 			Album:       tr.Album,
 			AlbumArtist: rel.AlbumArtist,

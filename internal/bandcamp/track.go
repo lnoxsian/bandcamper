@@ -13,7 +13,8 @@ func ParseTrack(htmlContent, pageURL string) (*Release, error) {
 	schema, _ := ExtractLDJson(htmlContent)
 
 	release := &Release{
-		URL: pageURL,
+		Provider: "bandcamp",
+		URL:      pageURL,
 	}
 
 	var track Track

@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -26,6 +27,7 @@ type trackState struct {
 }
 
 type albumState struct {
+	provider    string
 	title       string
 	artist      string
 	totalTracks int
@@ -81,7 +83,15 @@ func (ui *ProgressUI) OnReleaseStart(rel *bandcamp.Release) {
 		albumTitle = "Release"
 	}
 
+	provName := rel.Provider
+	if strings.EqualFold(provName, "bandcamp") {
+		provName = "Bandcamp"
+	} else if strings.EqualFold(provName, "soundcloud") {
+		provName = "SoundCloud"
+	}
+
 	album := &albumState{
+		provider:    provName,
 		title:       albumTitle,
 		artist:      rel.Artist,
 		totalTracks: len(rel.Tracks),
@@ -115,7 +125,11 @@ func (ui *ProgressUI) OnReleaseStart(rel *bandcamp.Release) {
 		}
 		ui.renderTTYLocked(false)
 	} else {
-		fmt.Fprintf(ui.out, "\n%s [0/%d]\n", album.title, album.totalTracks)
+		provPrefix := ""
+		if album.provider != "" {
+			provPrefix = "[" + album.provider + "] "
+		}
+		fmt.Fprintf(ui.out, "\n%s%s [0/%d]\n", provPrefix, album.title, album.totalTracks)
 	}
 }
 
@@ -225,7 +239,11 @@ func (ui *ProgressUI) OnReleaseDone(res *downloader.DownloadResult) {
 		if album.failed > 0 {
 			statusTag = fmt.Sprintf("[%d FAILED]", album.failed)
 		}
-		fmt.Fprintf(ui.out, "%s [%d/%d] %s\n", album.title, album.completed, album.totalTracks, statusTag)
+		provPrefix := ""
+		if album.provider != "" {
+			provPrefix = "[" + album.provider + "] "
+		}
+		fmt.Fprintf(ui.out, "%s%s [%d/%d] %s\n", provPrefix, album.title, album.completed, album.totalTracks, statusTag)
 		if res != nil && res.OutputDir != "" {
 			fmt.Fprintf(ui.out, "  Output: %s\n", res.OutputDir)
 		}
@@ -246,8 +264,12 @@ func (ui *ProgressUI) renderTTYLocked(isFinal bool) {
 
 	linesToPrint := 0
 
-	// 1. Album header: album 1 [3/3] OK
-	header := fmt.Sprintf("%s [%d/%d]", album.title, album.completed, album.totalTracks)
+	// 1. Album header: [Provider] album 1 [3/3] OK
+	provPrefix := ""
+	if album.provider != "" {
+		provPrefix = ui.clr.Cyan("["+album.provider+"]") + " "
+	}
+	header := fmt.Sprintf("%s%s [%d/%d]", provPrefix, album.title, album.completed, album.totalTracks)
 	if isFinal || album.completed == album.totalTracks {
 		if album.failed == 0 {
 			header += " " + ui.clr.BoldGreen("OK")

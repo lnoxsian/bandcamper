@@ -14,6 +14,7 @@ import (
 	"github.com/lnoxsian/bandcamper/internal/bandcamp"
 	"github.com/lnoxsian/bandcamper/internal/config"
 	"github.com/lnoxsian/bandcamper/internal/downloader"
+	"github.com/lnoxsian/bandcamper/internal/provider"
 	"github.com/lnoxsian/bandcamper/internal/storage"
 	"github.com/lnoxsian/bandcamper/internal/terminal"
 )
@@ -136,13 +137,16 @@ func run(args []string) int {
 		quiet         bool
 		useColor      bool
 		noColor       bool
+		providerFlag  string
 		showVersion   bool
 		showHelp      bool
 	)
 
+	fs.StringVar(&providerFlag, "provider", "", "Explicitly select provider (bandcamp, soundcloud)")
+
 	fs.StringVar(&configFile, "config", "", "Path to configuration file")
-	fs.StringVar(&urlFile, "file", "", "File containing Bandcamp URLs (one per line)")
-	fs.StringVar(&urlFile, "f", "", "File containing Bandcamp URLs (shorthand)")
+	fs.StringVar(&urlFile, "file", "", "File containing URLs (one per line)")
+	fs.StringVar(&urlFile, "f", "", "File containing URLs (shorthand)")
 
 	fs.StringVar(&outputDir, "output", "", "Output directory for downloads (default: ~/Music)")
 	fs.StringVar(&outputDir, "o", "", "Output directory (shorthand)")
@@ -178,7 +182,7 @@ func run(args []string) int {
 	fs.BoolVar(&showHelp, "h", false, "Show help message (shorthand)")
 
 	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Bandcamper %s — Fast, robust Bandcamp downloader\n\n", Version)
+		fmt.Fprintf(os.Stderr, "Bandcamper %s — Music downloader for Bandcamp & SoundCloud\n\n", Version)
 		fmt.Fprintf(os.Stderr, "Usage:\n")
 		fmt.Fprintf(os.Stderr, "  bandcamper [options] <URL>...\n")
 		fmt.Fprintf(os.Stderr, "  bandcamper [options] <URL1>,<URL2>...\n")
@@ -187,7 +191,9 @@ func run(args []string) int {
 		fs.PrintDefaults()
 		fmt.Fprintf(os.Stderr, "\nExamples:\n")
 		fmt.Fprintf(os.Stderr, "  bandcamper https://artist.bandcamp.com/album/example\n")
-		fmt.Fprintf(os.Stderr, "  bandcamper https://artist1.bandcamp.com/album/a,https://artist2.bandcamp.com/album/b\n")
+		fmt.Fprintf(os.Stderr, "  bandcamper https://soundcloud.com/artist/track-name\n")
+		fmt.Fprintf(os.Stderr, "  bandcamper https://soundcloud.com/artist/sets/playlist-name\n")
+		fmt.Fprintf(os.Stderr, "  bandcamper --provider soundcloud https://soundcloud.com/artist\n")
 		fmt.Fprintf(os.Stderr, "  bandcamper --output ~/Music --jobs 4 --playlist m3u https://artist.bandcamp.com\n")
 		fmt.Fprintf(os.Stderr, "  bandcamper --dry-run https://artist.bandcamp.com/track/example-track\n")
 	}
@@ -344,25 +350,20 @@ func run(args []string) int {
 			continue
 		}
 
-		resolved, err := bandcamp.ResolveURL(rawURL)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s %q: %v\n", clr.Red("Invalid Bandcamp URL"), rawURL, err)
-			hasInvalidURL = true
-			continue
-		}
-
 		if !cfg.Quiet {
-			fmt.Printf("\n%s %s (%s)...\n", clr.Cyan("Resolving"), clr.Bold(resolved.NormalizedURL), resolved.Type)
+			fmt.Printf("\n%s %s...\n", clr.Cyan("Resolving"), clr.Bold(rawURL))
 		}
 
-		results, err := dl.DownloadURL(ctx, resolved.NormalizedURL)
+		results, err := dl.DownloadURLWithProvider(ctx, rawURL, providerFlag)
 		if err != nil {
-			if errors.Is(err, bandcamp.ErrParseFailed) {
+			if errors.Is(err, bandcamp.ErrInvalidURL) || errors.Is(err, provider.ErrNoProviderMatches) || errors.Is(err, provider.ErrProviderNotFound) {
+				hasInvalidURL = true
+			} else if errors.Is(err, bandcamp.ErrParseFailed) {
 				hasParseError = true
 			} else {
 				hasDownloadError = true
 			}
-			fmt.Fprintf(os.Stderr, "%s %s: %v\n", clr.Red("Failed processing"), resolved.NormalizedURL, err)
+			fmt.Fprintf(os.Stderr, "%s %s: %v\n", clr.Red("Failed processing"), rawURL, err)
 			continue
 		}
 

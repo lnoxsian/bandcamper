@@ -2,7 +2,8 @@ package bandcamp
 
 import (
 	"errors"
-	"time"
+
+	"github.com/lnoxsian/bandcamper/internal/provider"
 )
 
 // Common errors.
@@ -16,26 +17,8 @@ var (
 	ErrNoStreamURL     = errors.New("no audio stream URL available for track")
 )
 
-// Release represents an album, EP, or single release on Bandcamp.
-type Release struct {
-	URL         string
-	Artist      string
-	Album       string
-	AlbumArtist string
-	Description string
-	Genre       string
-	ReleaseDate time.Time
-	ArtworkURL  string
-	Tracks      []Track
-}
+// Release aliases the normalized provider.Release model.
+type Release = provider.Release
 
-// Track represents an individual audio track within a release.
-type Track struct {
-	Number    int
-	Title     string
-	Artist    string
-	Album     string
-	Duration  time.Duration
-	StreamURL string
-	Lyrics    string
-}
+// Track aliases the normalized provider.Track model.
+type Track = provider.Track

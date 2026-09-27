@@ -25,6 +25,7 @@ func RenderDirectory(tmpl string, data TemplateData) string {
 	}
 
 	r := strings.NewReplacer(
+		"{provider}", data.Provider,
 		"{artist}", data.Artist,
 		"{album}", data.Album,
 		"{albumartist}", albumArtist,
