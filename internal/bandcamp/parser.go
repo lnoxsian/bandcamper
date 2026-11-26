@@ -72,8 +72,8 @@ type SchemaTrackList struct {
 }
 
 type SchemaTrackItem struct {
-	Position int                `json:"position"`
-	Item     SchemaMusicTrack   `json:"item"`
+	Position int              `json:"position"`
+	Item     SchemaMusicTrack `json:"item"`
 }
 
 type SchemaMusicTrack struct {

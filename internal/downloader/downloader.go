@@ -144,16 +144,35 @@ func (d *Downloader) DownloadURLWithProvider(ctx context.Context, rawURL string,
 }
 
 func (d *Downloader) downloadArtist(ctx context.Context, artistURL string) ([]*DownloadResult, error) {
-	htmlContent, err := d.Client.FetchString(ctx, artistURL, 5*1024*1024)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch artist page %s: %w", artistURL, err)
+	targetURL := artistURL
+	var htmlContent string
+	var err error
+
+	if !strings.HasSuffix(targetURL, "/music") && !strings.HasSuffix(targetURL, "/releases") {
+		musicURL := strings.TrimRight(targetURL, "/") + "/music"
+		htmlContent, err = d.Client.FetchString(ctx, musicURL, 5*1024*1024)
+		if err == nil {
+			releaseURLs, err := bandcamp.ParseArtistDiscography(htmlContent, musicURL)
+			if err == nil && len(releaseURLs) > 0 {
+				return d.downloadReleaseList(ctx, releaseURLs)
+			}
+		}
 	}
 
-	releaseURLs, err := bandcamp.ParseArtistDiscography(htmlContent, artistURL)
+	htmlContent, err = d.Client.FetchString(ctx, targetURL, 5*1024*1024)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch artist page %s: %w", targetURL, err)
+	}
+
+	releaseURLs, err := bandcamp.ParseArtistDiscography(htmlContent, targetURL)
 	if err != nil {
 		return nil, err
 	}
 
+	return d.downloadReleaseList(ctx, releaseURLs)
+}
+
+func (d *Downloader) downloadReleaseList(ctx context.Context, releaseURLs []string) ([]*DownloadResult, error) {
 	var results []*DownloadResult
 	var lastErr error
 

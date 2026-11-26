@@ -125,6 +125,113 @@ func TestParseArtistDiscography(t *testing.T) {
 	}
 }
 
+func TestParseArtistDiscographyWithDataClientItems(t *testing.T) {
+	htmlContent := `
+	<!DOCTYPE html>
+	<html>
+	<body>
+		<ol id="music-grid" class="music-grid" data-client-items="[{&quot;art_id&quot;:100,&quot;page_url&quot;:&quot;/album/client-album&quot;,&quot;title&quot;:&quot;Client Album&quot;,&quot;type&quot;:&quot;album&quot;},{&quot;art_id&quot;:101,&quot;page_url&quot;:&quot;/track/client-track&quot;,&quot;title&quot;:&quot;Client Track&quot;,&quot;type&quot;:&quot;track&quot;}]">
+			<li class="music-grid-item" data-item-id="album-1">
+				<a href="/album/grid-album">
+					<p class="title">Grid Album</p>
+				</a>
+			</li>
+			<li class="music-grid-item" data-item-id="track-1">
+				<a href="/track/grid-track">
+					<p class="title">Grid Track</p>
+				</a>
+			</li>
+		</ol>
+	</body>
+	</html>
+	`
+
+	urls, err := ParseArtistDiscography(htmlContent, "https://tokyoroseofficial.bandcamp.com/music")
+	if err != nil {
+		t.Fatalf("unexpected error parsing discography: %v", err)
+	}
+
+	if len(urls) != 4 {
+		t.Fatalf("expected 4 releases (2 grid + 2 client items), got %d: %v", len(urls), urls)
+	}
+
+	expected := []string{
+		"https://tokyoroseofficial.bandcamp.com/album/grid-album",
+		"https://tokyoroseofficial.bandcamp.com/track/grid-track",
+		"https://tokyoroseofficial.bandcamp.com/album/client-album",
+		"https://tokyoroseofficial.bandcamp.com/track/client-track",
+	}
+
+	for i, exp := range expected {
+		if urls[i] != exp {
+			t.Errorf("index %d: expected %q, got %q", i, exp, urls[i])
+		}
+	}
+}
+
+func TestParseArtistDiscographyFeaturedAlbumExcludesTrackTable(t *testing.T) {
+	htmlContent := `
+	<!DOCTYPE html>
+	<html>
+	<body>
+		<div id="name-section">
+			<h2 class="trackTitle"><a href="/album/featured-album">Featured Album</a></h2>
+		</div>
+		<table id="track_table" class="track_list">
+			<tr class="track_row_view">
+				<td><a href="/track/track-one">Track One</a></td>
+			</tr>
+			<tr class="track_row_view">
+				<td><a href="/track/track-two">Track Two</a></td>
+			</tr>
+		</table>
+		<div id="discography">
+			<ul class="discography">
+				<li><a href="/album/sidebar-album">Sidebar Album</a></li>
+			</ul>
+		</div>
+	</body>
+	</html>
+	`
+
+	urls, err := ParseArtistDiscography(htmlContent, "https://tokyoroseofficial.bandcamp.com")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Should include /album/featured-album and /album/sidebar-album, but NOT /track/track-one or /track/track-two
+	if len(urls) != 2 {
+		t.Fatalf("expected 2 releases (featured album + sidebar album, excluding tracklist), got %d: %v", len(urls), urls)
+	}
+
+	expected := []string{
+		"https://tokyoroseofficial.bandcamp.com/album/featured-album",
+		"https://tokyoroseofficial.bandcamp.com/album/sidebar-album",
+	}
+
+	for i, exp := range expected {
+		if urls[i] != exp {
+			t.Errorf("index %d: expected %q, got %q", i, exp, urls[i])
+		}
+	}
+}
+
+func TestParseTokyoRoseDiscographyFixture(t *testing.T) {
+	content, err := os.ReadFile("/tmp/tokyorose.html")
+	if err != nil {
+		t.Skip("skipping /tmp/tokyorose.html test: fixture not present")
+	}
+
+	urls, err := ParseArtistDiscography(string(content), "https://tokyoroseofficial.bandcamp.com/music")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(urls) != 29 {
+		t.Fatalf("expected 29 releases for Tokyo Rose, got %d: %v", len(urls), urls)
+	}
+}
+
 func TestDataTralbumAttributeParsing(t *testing.T) {
 	htmlWithAttr := `
 	<!DOCTYPE html>

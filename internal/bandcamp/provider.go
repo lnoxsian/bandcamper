@@ -56,32 +56,35 @@ func (p *BandcampProvider) Resolve(ctx context.Context, u *url.URL) ([]*provider
 
 	switch resolved.Type {
 	case PageArtist:
-		htmlContent, err := p.Client.FetchString(ctx, resolved.NormalizedURL, 5*1024*1024)
-		if err != nil {
-			return nil, fmt.Errorf("failed to fetch artist page %s: %w", resolved.NormalizedURL, err)
+		targetURL := resolved.NormalizedURL
+		var htmlContent string
+		var fetchErr error
+
+		// Bandcamp artist root pages (e.g. https://artist.bandcamp.com) typically display
+		// a featured release rather than the full discography. The full discography is on
+		// the "/music" subpage.
+		if !strings.HasSuffix(targetURL, "/music") && !strings.HasSuffix(targetURL, "/releases") {
+			musicURL := strings.TrimRight(targetURL, "/") + "/music"
+			htmlContent, fetchErr = p.Client.FetchString(ctx, musicURL, 5*1024*1024)
+			if fetchErr == nil {
+				releaseURLs, err := ParseArtistDiscography(htmlContent, musicURL)
+				if err == nil && len(releaseURLs) > 0 {
+					return p.resolveReleaseURLs(ctx, releaseURLs)
+				}
+			}
 		}
 
-		releaseURLs, err := ParseArtistDiscography(htmlContent, resolved.NormalizedURL)
+		htmlContent, fetchErr = p.Client.FetchString(ctx, targetURL, 5*1024*1024)
+		if fetchErr != nil {
+			return nil, fmt.Errorf("failed to fetch artist page %s: %w", targetURL, fetchErr)
+		}
+
+		releaseURLs, err := ParseArtistDiscography(htmlContent, targetURL)
 		if err != nil {
 			return nil, err
 		}
 
-		var releases []*provider.Release
-		for _, relURL := range releaseURLs {
-			subU, err := url.Parse(relURL)
-			if err != nil {
-				continue
-			}
-			subRels, err := p.Resolve(ctx, subU)
-			if err != nil {
-				continue
-			}
-			releases = append(releases, subRels...)
-		}
-		if len(releases) == 0 {
-			return nil, fmt.Errorf("%w: no releases found for %s", ErrParseFailed, resolved.NormalizedURL)
-		}
-		return releases, nil
+		return p.resolveReleaseURLs(ctx, releaseURLs)
 
 	case PageAlbum:
 		htmlContent, err := p.Client.FetchString(ctx, resolved.NormalizedURL, 5*1024*1024)
@@ -108,4 +111,28 @@ func (p *BandcampProvider) Resolve(ctx context.Context, u *url.URL) ([]*provider
 	default:
 		return nil, fmt.Errorf("%w: unrecognized page type for %s", ErrUnsupportedPage, u.String())
 	}
+}
+
+func (p *BandcampProvider) resolveReleaseURLs(ctx context.Context, releaseURLs []string) ([]*provider.Release, error) {
+	var releases []*provider.Release
+	for _, relURL := range releaseURLs {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+		subU, err := url.Parse(relURL)
+		if err != nil {
+			continue
+		}
+		subRels, err := p.Resolve(ctx, subU)
+		if err != nil {
+			continue
+		}
+		releases = append(releases, subRels...)
+	}
+	if len(releases) == 0 {
+		return nil, fmt.Errorf("%w: no releases found", ErrParseFailed)
+	}
+	return releases, nil
 }

@@ -45,12 +45,12 @@ func IsTransientError(err error) bool {
 
 	// Check for transient HTTP status codes in error message (e.g. "HTTP 429", "HTTP 503")
 	for _, code := range []int{
-		http.StatusRequestTimeout,     // 408
-		http.StatusTooManyRequests,    // 429
+		http.StatusRequestTimeout,      // 408
+		http.StatusTooManyRequests,     // 429
 		http.StatusInternalServerError, // 500
 		http.StatusBadGateway,          // 502
-		http.StatusServiceUnavailable, // 503
-		http.StatusGatewayTimeout,     // 504
+		http.StatusServiceUnavailable,  // 503
+		http.StatusGatewayTimeout,      // 504
 	} {
 		if strings.Contains(errStr, strconv.Itoa(code)) {
 			return true
